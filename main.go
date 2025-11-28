@@ -25,6 +25,7 @@ func main() {
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 	
 	mux.HandleFunc("/", app.home)
+	mux.HandleFunc("/login", app.login)	
 
 	srv := &http.Server{Addr: "0.0.0.0:8080", ErrorLog: errorLog, Handler: mux}
 	infoLog.Println("Starting server on 0.0.0.0:8080")
