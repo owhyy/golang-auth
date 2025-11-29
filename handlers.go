@@ -2,9 +2,11 @@ package main
 
 import (
 	_ "embed"
-	"golang.org/x/crypto/bcrypt"
+	"errors"
 	"html/template"
 	"net/http"
+
+	"owhyy/simple-auth/models"
 )
 
 //go:embed html/home.html
@@ -30,6 +32,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 	ts, err := template.New("home").Parse(homeTmpl)
 	if err != nil {
+
 		app.errorLog.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -78,12 +81,22 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 		email := r.PostForm.Get("email")
 		password := r.PostForm.Get("password")
 
-		// TODO: replace this with db lookup
-		if email == "user@example.com" && password == "password123" {
-			w.Header().Set("HX-Redirect", "/")
-			w.WriteHeader(http.StatusOK)
+		err = app.users.Authenticate(email, password)
+		if err != nil {
+			msg := "Authentication error"
+			if errors.Is(err, models.ErrInvalidCredentials) {
+				msg = "Invalid email or password"
+			}
+			app.errorLog.Println(err.Error())
+			w.Write([]byte(`<p style="color: red;">` + msg + "</p>"))
 			return
 		}
+
+		app.infoLog.Printf("User logged in: %s", email)
+
+		w.Header().Set("HX-Redirect", "/")
+		w.WriteHeader(http.StatusOK)
+		return
 
 		w.Write([]byte(`<p style="color: red;">Invalid email or password</p>`))
 	}
@@ -126,7 +139,6 @@ func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 		password := r.PostForm.Get("password")
 		confirmPassword := r.PostForm.Get("confirm_password")
 
-		// Validation
 		if email == "" || password == "" {
 			w.Write([]byte("<p style='color: red;'>Email and password are required</p>"))
 			return
@@ -142,15 +154,17 @@ func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		err = app.users.Create(email, password)
 		if err != nil {
+			var msg = "Failed to create account"
+			if errors.Is(err, models.ErrDuplicateEmail) {
+				msg = "An user with this email already exists"
+			}
+
+			w.Write([]byte("<p style='color: red;'>" + msg + "</p>"))
 			app.errorLog.Println(err.Error())
-			w.Write([]byte("<p style='color: red;'>Failed to create an account</p>"))
 			return
 		}
-
-		// TODO: Save user to database
-		app.infoLog.Printf("New user signed up: %s:%s", email, hashedPassword)
 
 		w.Header().Set("HX-Redirect", "/login")
 		w.WriteHeader(http.StatusOK)

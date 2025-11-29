@@ -33,3 +33,4 @@ go.work.sum
 
 # Emacs tmp files
 *~
+users.db

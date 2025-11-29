@@ -2,4 +2,7 @@ module owhyy/simple-auth
 
 go 1.25.4
 
-require golang.org/x/crypto v0.45.0 // indirect
+require (
+	github.com/mattn/go-sqlite3 v1.14.32 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+)
