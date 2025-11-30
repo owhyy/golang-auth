@@ -39,7 +39,7 @@ func (m *ValidationTokenModel) Create(userID int64) (string, error) {
 	}
 
 	expiresAt := time.Now().Add(validationTokenTTL)
-	
+
 	_, err = m.DB.Exec(
 		`INSERT INTO validation_tokens (user_id, token, expires_at) VALUES (?, ?, ?)`,
 		userID, token, expiresAt,

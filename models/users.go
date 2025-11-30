@@ -82,3 +82,10 @@ func (m *UserModel) EmailExists(email string) (bool, error) {
 	return exists, err
 }
 
+func (m *UserModel) ValidateByID(id int64) error {
+	_, err := m.DB.Exec(
+		`UPDATE users SET is_valid = 1 WHERE id = ?`,
+		id,
+	)
+	return err
+}

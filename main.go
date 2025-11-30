@@ -38,6 +38,7 @@ func main() {
 	mux.HandleFunc("/", app.home)
 	mux.HandleFunc("/login", app.login)
 	mux.HandleFunc("/signup", app.signup)
+	mux.HandleFunc("/verify", app.verify)
 
 	srv := &http.Server{Addr: "0.0.0.0:8080", ErrorLog: errorLog, Handler: mux}
 	infoLog.Println("Starting server on 0.0.0.0:8080")

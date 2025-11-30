@@ -18,6 +18,9 @@ var loginTmpl string
 //go:embed html/signup.html
 var signUpTmpl string
 
+//go:embed html/verify.html
+var verifyTmpl string
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
@@ -97,8 +100,6 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("HX-Redirect", "/")
 		w.WriteHeader(http.StatusOK)
 		return
-
-		w.Write([]byte(`<p style="color: red;">Invalid email or password</p>`))
 	}
 
 	w.Header().Set("Allow", http.MethodGet+", "+http.MethodPost)
@@ -182,4 +183,68 @@ func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Allow", http.MethodGet+", "+http.MethodPost)
 	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+}
+
+func (app *application) verify(w http.ResponseWriter, r *http.Request) {
+	data := struct{ Error string }{}
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ts, err := template.New("verify").Parse(verifyTmpl)
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		data.Error = "Verification link is invalid. Try requesting a new verification link after logging in"
+		err = ts.ExecuteTemplate(w, "verify", data)
+		if err != nil {
+			app.errorLog.Println(err.Error())
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+
+	userID, err := app.tokens.Consume(token)
+	if err != nil {
+		data.Error = "Token has already been used or is expired. Please request a new verification link after logging in"
+		err = ts.ExecuteTemplate(w, "verify", data)
+		if err != nil {
+			app.errorLog.Println(err.Error())
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+
+	// TODO: ideally this proccess should be atomic
+	// but for an MVP it's alright
+	err = app.users.ValidateByID(userID)
+	if err != nil {
+		data.Error = "Something went wrong. Please try again later"
+		app.errorLog.Println("verify: failed to validate user:", err)
+		err = ts.ExecuteTemplate(w, "verify", data)
+		if err != nil {
+			app.errorLog.Println(err.Error())
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+
+	app.infoLog.Printf("User %d validated", userID)
+	err = ts.ExecuteTemplate(w, "verify", data)
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
