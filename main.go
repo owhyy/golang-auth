@@ -11,6 +11,7 @@ type application struct {
 	errorLog *log.Logger
 	infoLog  *log.Logger
 	users    *models.UserModel
+	tokens   *models.ValidationTokenModel
 }
 
 func main() {
@@ -26,7 +27,8 @@ func main() {
 	app := &application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
-		users:    &models.UserModel{DB: db},		
+		users:    &models.UserModel{DB: db},
+		tokens:    &models.ValidationTokenModel{DB: db},				
 	}
 
 	mux := http.NewServeMux()

@@ -154,7 +154,8 @@ func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = app.users.Create(email, password)
+		userId, err := app.users.Create(email, password)
+		app.infoLog.Println(userId)
 		if err != nil {
 			var msg = "Failed to create account"
 			if errors.Is(err, models.ErrDuplicateEmail) {
@@ -165,6 +166,14 @@ func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 			app.errorLog.Println(err.Error())
 			return
 		}
+
+		token, err := app.tokens.Create(userId)
+		if err != nil {
+			app.errorLog.Println("Failed to create token " + err.Error())
+		}
+		app.infoLog.Println("Token " + token + " created for " + email)
+		// TODO: send email
+		//MailService.sendValidationEmail(email, token)
 
 		w.Header().Set("HX-Redirect", "/login")
 		w.WriteHeader(http.StatusOK)

@@ -13,7 +13,7 @@ var (
 )
 
 type User struct {
-	ID           int
+	ID           int64
 	Email        string
 	PasswordHash string
 	IsValid      bool
@@ -24,25 +24,29 @@ type UserModel struct {
 	DB *DB
 }
 
-func (m *UserModel) Create(email, password string) error {
+func (m *UserModel) Create(email, password string) (int64, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	_, err = m.DB.Exec(
+	result, err := m.DB.Exec(
 		"INSERT INTO users (email, password_hash) VALUES (?, ?)",
 		email, string(hashedPassword),
 	)
 
 	if err != nil {
 		if err.Error() == "UNIQUE constraint failed: users.email" {
-			return ErrDuplicateEmail
+			return 0, ErrDuplicateEmail
 		}
-		return err
+		return 0, err
 	}
 
-	return nil
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func (m *UserModel) Authenticate(email, password string) error {
@@ -77,3 +81,4 @@ func (m *UserModel) EmailExists(email string) (bool, error) {
 
 	return exists, err
 }
+
