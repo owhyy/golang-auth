@@ -4,8 +4,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"embed"
+	
 	"owhyy/simple-auth/models"
 )
+
+//go:embed static/*
+var staticFS embed.FS
 
 type application struct {
 	errorLog *log.Logger
@@ -32,8 +37,9 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	fileServer := http.FileServer(http.Dir("./static"))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+
+	fileServer := http.FileServer(http.FS(staticFS))
+        mux.Handle("/static/", fileServer)	
 
 	mux.HandleFunc("/", app.home)
 	mux.HandleFunc("/login", app.login)

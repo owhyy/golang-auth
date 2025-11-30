@@ -1,0 +1,20 @@
+# VCS
+.git
+.gitignore
+
+# Build artifacts
+simple-auth
+*.exe
+*.test
+*.out
+
+# Local databases
+users.db
+tmp
+*.log
+
+# Docs
+README.md
+LICENSE
+Dockerfile
+
