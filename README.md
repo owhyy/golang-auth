@@ -17,7 +17,7 @@ go run main.go handlers.go
 
 ```
 docker build -t go-auth-app .
-docker run --rm -p 8080:8080 go-auth-app:latest
+docker run --env-file .env --rm -p 8080:8080 go-auth-app:latest
 ```
 
 Accessing localhost:8080 should open the home page.
