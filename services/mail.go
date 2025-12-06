@@ -36,7 +36,7 @@ func (s *EmailService) SendEmail(to, subject, body string) error {
 	auth := smtp.PlainAuth("", s.username, s.password, s.host)
 
 	err := smtp.SendMail(
-		s.host+s.port,
+		s.host+":"+s.port,
 		auth,
 		s.from,
 		[]string{to},

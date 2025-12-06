@@ -173,7 +173,7 @@ func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 			app.errorLog.Println("Failed to create token " + err.Error())
 		}
 		app.infoLog.Println("Token " + token + " created for " + email)
-		err = app.emailService.SendEmail(email, app.config.BaseURL, token)
+		err = app.emailService.SendVerificationEmail(email, app.config.BaseURL, token)
 		// Should we display error to front-end or not?
 		if err != nil {
 			app.errorLog.Println("Failed to send verification email to " + email + err.Error())
@@ -248,6 +248,4 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 		app.errorLog.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
-
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
