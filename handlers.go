@@ -156,7 +156,6 @@ func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 		}
 
 		userId, err := app.users.Create(email, password)
-		app.infoLog.Println(userId)
 		if err != nil {
 			var msg = "Failed to create account"
 			if errors.Is(err, models.ErrDuplicateEmail) {
