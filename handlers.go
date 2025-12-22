@@ -5,13 +5,19 @@ import (
 	"errors"
 	"html/template"
 	"net/http"
+	"os"
 
-	passwordvalidator "github.com/wagslane/go-password-validator"
 	"owhyy/simple-auth/models"
+
+	"github.com/gorilla/sessions"
+	passwordvalidator "github.com/wagslane/go-password-validator"
 )
 
 //go:embed html/home.html
 var homeTmpl string
+
+//go:embed html/profile.html
+var profileTmpl string
 
 //go:embed html/login.html
 var loginTmpl string
@@ -21,6 +27,8 @@ var signUpTmpl string
 
 //go:embed html/verify.html
 var verifyTmpl string
+
+var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
@@ -36,13 +44,61 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 	ts, err := template.New("home").Parse(homeTmpl)
 	if err != nil {
-
 		app.errorLog.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	err = ts.ExecuteTemplate(w, "home", nil)
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (app *application) profile(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ts, err := template.New("profile").Parse(profileTmpl)
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	session, err := store.Get(r, "auth-session")
+	if session.IsNew || session.Values["userID"] == nil {
+		w.Header().Set("HX-Redirect", "/login")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	id, ok := session.Values["userID"].(int64)
+	if !ok {
+		app.errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	user, err := app.users.GetUserByID(id)
+	if err != nil {}
+
+
+	err = ts.ExecuteTemplate(w, "profile", user)
 	if err != nil {
 		app.errorLog.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -78,14 +134,14 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
 			app.errorLog.Println(err.Error())
-			http.Error(w, "Bad Request", http.StatusBadRequest)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
 		email := r.PostForm.Get("email")
 		password := r.PostForm.Get("password")
 
-		err = app.users.Authenticate(email, password)
+		id, err := app.users.Authenticate(email, password)
 		if err != nil {
 			msg := "Authentication error"
 			if errors.Is(err, models.ErrInvalidCredentials) {
@@ -96,9 +152,18 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		session, err := store.New(r, "auth-session")
+		if err != nil {
+			app.errorLog.Println(err.Error())
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		session.Values["userID"] = id
+		session.Save(r, w)
+
 		app.infoLog.Printf("User logged in: %s", email)
 
-		w.Header().Set("HX-Redirect", "/")
+		w.Header().Set("HX-Redirect", "/profile")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -146,7 +211,7 @@ func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		const minEntropyBits = 60
+		const minEntropyBits = 1
 		err = passwordvalidator.Validate(password, minEntropyBits)
 		if err != nil {
 			w.Write([]byte("<p style='color: red;'>Error: " + err.Error() + "</p>"))

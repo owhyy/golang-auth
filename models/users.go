@@ -49,27 +49,28 @@ func (m *UserModel) Create(email, password string) (int64, error) {
 	return id, nil
 }
 
-func (m *UserModel) Authenticate(email, password string) error {
+func (m *UserModel) Authenticate(email, password string) (int64, error) {
+	var id int64
 	var passwordHash string
 
 	err := m.DB.QueryRow(
-		"SELECT password_hash FROM users WHERE email = ?",
+		"SELECT id, password_hash FROM users WHERE email = ?",
 		email,
-	).Scan(&passwordHash)
+	).Scan(&id, &passwordHash)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return ErrInvalidCredentials
+			return 0, ErrInvalidCredentials
 		}
-		return err
+		return 0, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
 	if err != nil {
-		return ErrInvalidCredentials
+		return 0, ErrInvalidCredentials
 	}
 
-	return nil
+	return id, nil
 }
 
 func (m *UserModel) EmailExists(email string) (bool, error) {
@@ -98,4 +99,18 @@ func (m *UserModel) GetEmailByID(id int64) (string, error) {
 	).Scan(&email)
 
 	return email, err
+}
+
+func (m *UserModel) GetUserByID(id int64) (*User, error) {
+	user := &User{}
+	err := m.DB.QueryRow(
+		"SELECT id, email, is_valid, created_at FROM users WHERE id = ?",
+		id,
+	).Scan(
+		&user.ID,
+		&user.Email,
+		&user.IsValid,
+		&user.CreatedAt,
+	)
+	return user, err
 }

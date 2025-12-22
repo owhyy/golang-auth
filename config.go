@@ -14,12 +14,13 @@ type Config struct {
 	SMTPPassword string
 	SMTPFrom     string
 
-	BaseURL string
+	BaseURL           string
+	SessionSecret string
 }
 
 func LoadConfig() (*Config, error) {
 	cfg := &Config{}
-	godotenv.Load();
+	godotenv.Load()
 
 	cfg.SMTPHost = os.Getenv("SMTP_HOST")
 	cfg.SMTPPort = os.Getenv("SMTP_PORT")
@@ -27,11 +28,12 @@ func LoadConfig() (*Config, error) {
 	cfg.SMTPPassword = os.Getenv("SMTP_PASSWORD")
 	cfg.SMTPFrom = os.Getenv("SMTP_FROM")
 	cfg.BaseURL = os.Getenv("BASE_URL")
-	
-	if cfg.SMTPHost == "" || cfg.SMTPPort == "" || cfg.SMTPUsername == "" || 
-	   cfg.SMTPPassword == "" || cfg.SMTPFrom == "" || cfg.BaseURL == "" {
+	cfg.SessionSecret = os.Getenv("SESSION_SECRET")
+
+	if cfg.SMTPHost == "" || cfg.SMTPPort == "" || cfg.SMTPUsername == "" ||
+		cfg.SMTPPassword == "" || cfg.SMTPFrom == "" || cfg.BaseURL == "" || cfg.SessionSecret == "" {
 		return nil, fmt.Errorf("missing required environment variables")
 	}
-	
+
 	return cfg, nil
 }
