@@ -187,6 +187,37 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
 
+func (app *application) logout(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/logout" {
+		http.NotFound(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	session, err := app.cookieStore.Get(r, "auth-session")
+	if err != nil {
+		app.errorLog.Println(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	session.Options.MaxAge = -1
+	session.Values = nil
+
+	if err := session.Save(r, w); err != nil {
+		app.errorLog.Println(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("HX-Redirect", "/")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
 func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/signup" {
 		http.NotFound(w, r)

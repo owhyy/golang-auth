@@ -23,7 +23,9 @@
                 {{end}}
             </hgroup>
 
-            <button type="submit">Logout</button>
+            <form hx-post="/logout">
+                <button type="submit">Logout</button>
+            </form>
         </article>
     </main>
     </body>
