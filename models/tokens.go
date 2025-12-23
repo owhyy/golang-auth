@@ -67,7 +67,7 @@ func (m *ValidationTokenModel) Consume(token string) (int64, error) {
 		token,
 	).Scan(&userID, &expiresAt, &usedAt)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return 0, ErrInvalidOrExpiredToken
 		}
 		return 0, err

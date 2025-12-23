@@ -1,26 +1,26 @@
 {{define "verify"}}
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Verify your email</title>
-    <link rel="stylesheet" href="/static/pico.orange.min.css">
-  </head>
-  <body>
-    <main class="container" style="min-height: 100vh; display: flex; align-items: center;">
-      <article style="width: 100%; max-width: 600px; margin: 0 auto; text-align: center;">
-	{{if .Error}}
-	<h1>Verification failed</h1>
-	<p>{{.Error}}</p>
-	<a href="/" role="button" class="secondary">Go back</a>	
-	{{else}}	
-	<h1>Email verified ✅</h1>
-	<p>Your account has been successfully activated. You can procceed to log in.</p>
-	<a href="/login" role="button">Go to login</a>
-	{{end}}
-      </article>
-    </main>
-  </body>
+    <link href="/static/pico.orange.min.css" rel="stylesheet">
+</head>
+<body>
+<main class="container" style="min-height: 100vh; display: flex; align-items: center;">
+    <article style="width: 100%; max-width: 600px; margin: 0 auto; text-align: center;">
+        {{if .Error}}
+        <h1>Verification failed</h1>
+        <p>{{.Error}}</p>
+        <a class="secondary" href="/" role="button">Go back</a>
+        {{else}}
+        <h1>Email verified ✅</h1>
+        <p>Your account has been successfully activated. You can procceed to log in.</p>
+        <a href="/login" role="button">Go to login</a>
+        {{end}}
+    </article>
+</main>
+</body>
 </html>
 {{end}}

@@ -95,8 +95,8 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := app.users.GetUserByID(id)
-	if err != nil {}
-
+	if err != nil {
+	}
 
 	err = ts.ExecuteTemplate(w, "profile", user)
 	if err != nil {

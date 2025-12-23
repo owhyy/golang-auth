@@ -14,7 +14,7 @@ type Config struct {
 	SMTPPassword string
 	SMTPFrom     string
 
-	BaseURL           string
+	BaseURL       string
 	SessionSecret string
 }
 
