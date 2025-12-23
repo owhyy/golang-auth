@@ -8,17 +8,20 @@ import (
 
 	"owhyy/simple-auth/models"
 	"owhyy/simple-auth/services"
+
+	"github.com/gorilla/sessions"
 )
 
 //go:embed static/*
 var staticFS embed.FS
 
 type application struct {
-	config   *Config
-	errorLog *log.Logger
-	infoLog  *log.Logger
-	users    *models.UserModel
-	tokens   *models.ValidationTokenModel
+	config      *Config
+	errorLog    *log.Logger
+	infoLog     *log.Logger
+	users       *models.UserModel
+	tokens      *models.ValidationTokenModel
+	cookieStore *sessions.CookieStore
 
 	emailService *services.EmailService
 }
@@ -38,12 +41,17 @@ func main() {
 	}
 	defer db.Close()
 
+	var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+	store.Options = &sessions.Options{SameSite: http.SameSiteLaxMode, Secure: false}
+	infoLog.Println(os.Getenv("SESSION_KEY"))
+
 	app := &application{
-		config:   config,
-		errorLog: errorLog,
-		infoLog:  infoLog,
-		users:    &models.UserModel{DB: db},
-		tokens:   &models.ValidationTokenModel{DB: db},
+		config:      config,
+		errorLog:    errorLog,
+		infoLog:     infoLog,
+		users:       &models.UserModel{DB: db},
+		tokens:      &models.ValidationTokenModel{DB: db},
+		cookieStore: store,
 		emailService: services.NewEmailService(
 			config.SMTPHost,
 			config.SMTPPort,
@@ -62,6 +70,7 @@ func main() {
 	mux.HandleFunc("/login", app.login)
 	mux.HandleFunc("/signup", app.signup)
 	mux.HandleFunc("/verify", app.verify)
+	mux.HandleFunc("/profile", app.profile)
 
 	srv := &http.Server{Addr: "0.0.0.0:8080", ErrorLog: errorLog, Handler: mux}
 	infoLog.Println("Starting server on 0.0.0.0:8080")

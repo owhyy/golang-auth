@@ -1,26 +1,31 @@
 {{define "profile"}}
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Profile</title>
-    <link href="/static/pico.orange.min.css" rel="stylesheet">
-    <script src="/static/htmx.min.js"></script>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta content="width=device-width, initial-scale=1.0" name="viewport">
+        <title>Profile</title>
+        <link href="/static/pico.orange.min.css" rel="stylesheet">
+        <script src="/static/htmx.min.js"></script>
 
-</head>
-<body>
-<main class="container" style="display: flex; align-items: center; min-height: 100vh;">
-    <article style="width: 100%; max-width: 500px; margin: 0 auto;">
-        <hgroup>
-            <h1>Hello, {{.User.Email}}</h1>
-            <p>Welcome to your profile</p>
-            <p>{{.ValidationMsg}}</p>
-        </hgroup>
+    </head>
+    <body>
+    <main class="container" style="display: flex; align-items: center; min-height: 100vh;">
+        <article style="width: 100%; max-width: 500px; margin: 0 auto;">
+            <hgroup>
+                <h1>Hello, {{.Email}}</h1>
+                <p>Welcome to your profile</p>
+                {{ if .IsValid}}
+                    <p>Your account is validated</p>
+                {{else}}
+                    <p>Your account is not validated. Check your email for instructions on how to validate it</p>
+                    {{/*    todo: add resend confirmation email functionality     */}}
+                {{end}}
+            </hgroup>
 
-        <button type="submit">Logout</button>
-    </article>
-</main>
-</body>
-</html>
+            <button type="submit">Logout</button>
+        </article>
+    </main>
+    </body>
+    </html>
 {{end}}

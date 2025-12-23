@@ -5,11 +5,8 @@ import (
 	"errors"
 	"html/template"
 	"net/http"
-	"os"
-
 	"owhyy/simple-auth/models"
 
-	"github.com/gorilla/sessions"
 	passwordvalidator "github.com/wagslane/go-password-validator"
 )
 
@@ -28,8 +25,6 @@ var signUpTmpl string
 //go:embed html/verify.html
 var verifyTmpl string
 
-var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
-
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
@@ -39,6 +34,12 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", http.MethodGet)
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	session, err := app.cookieStore.Get(r, "auth-session")
+	if !session.IsNew && session.Values["userID"] != nil {
+		http.Redirect(w, r, "/profile", http.StatusSeeOther)
 		return
 	}
 
@@ -58,7 +59,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) profile(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
+	if r.URL.Path != "/profile" {
 		http.NotFound(w, r)
 		return
 	}
@@ -75,12 +76,13 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	session, err := store.Get(r, "auth-session")
+
+	session, err := app.cookieStore.Get(r, "auth-session")
 	if session.IsNew || session.Values["userID"] == nil {
-		w.Header().Set("HX-Redirect", "/login")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
 	if err != nil {
 		app.errorLog.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -96,6 +98,9 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 
 	user, err := app.users.GetUserByID(id)
 	if err != nil {
+		app.errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
 	err = ts.ExecuteTemplate(w, "profile", user)
@@ -112,8 +117,20 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	session, err := app.cookieStore.Get(r, "auth-session")
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
 	if r.Method == http.MethodGet {
-		ts, err := template.New("home").Parse(loginTmpl)
+		if !session.IsNew || session.Values["userID"] != nil {
+			http.Redirect(w, r, "/profile", http.StatusSeeOther)
+			return
+		}
+
+		ts, err := template.New("login").Parse(loginTmpl)
 		if err != nil {
 			app.errorLog.Println(err.Error())
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -122,7 +139,6 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 
 		err = ts.ExecuteTemplate(w, "login", nil)
 		if err != nil {
-
 			app.errorLog.Println(err.Error())
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
@@ -152,14 +168,13 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		session, err := store.New(r, "auth-session")
+		session.Values["userID"] = id
+		err = session.Save(r, w)
 		if err != nil {
 			app.errorLog.Println(err.Error())
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-		session.Values["userID"] = id
-		session.Save(r, w)
 
 		app.infoLog.Printf("User logged in: %s", email)
 

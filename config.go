@@ -14,8 +14,7 @@ type Config struct {
 	SMTPPassword string
 	SMTPFrom     string
 
-	BaseURL       string
-	SessionSecret string
+	BaseURL string
 }
 
 func LoadConfig() (*Config, error) {
@@ -28,10 +27,9 @@ func LoadConfig() (*Config, error) {
 	cfg.SMTPPassword = os.Getenv("SMTP_PASSWORD")
 	cfg.SMTPFrom = os.Getenv("SMTP_FROM")
 	cfg.BaseURL = os.Getenv("BASE_URL")
-	cfg.SessionSecret = os.Getenv("SESSION_SECRET")
 
 	if cfg.SMTPHost == "" || cfg.SMTPPort == "" || cfg.SMTPUsername == "" ||
-		cfg.SMTPPassword == "" || cfg.SMTPFrom == "" || cfg.BaseURL == "" || cfg.SessionSecret == "" {
+		cfg.SMTPPassword == "" || cfg.SMTPFrom == "" || cfg.BaseURL == "" {
 		return nil, fmt.Errorf("missing required environment variables")
 	}
 
