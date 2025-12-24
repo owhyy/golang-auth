@@ -281,7 +281,7 @@ func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		token, err := app.tokens.Create(userId)
+		token, err := app.tokens.CreateEmailVerificationToken(userId)
 		if err != nil {
 			app.errorLog.Println("Failed to create token " + err.Error())
 		}
@@ -314,6 +314,7 @@ func (app *application) requestPasswdReset(w http.ResponseWriter, r *http.Reques
 
 	session, err := app.cookieStore.Get(r, "auth-session")
 	if err != nil {
+		app.errorLog.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -373,8 +374,9 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO: ideally this proccess should be atomic
 	// but for an MVP it's alright
-	userID, err := app.tokens.Consume(token)
+	userID, err := app.tokens.Consume(models.EmailVerifyPurpose, token)
 	if err != nil {
+		app.errorLog.Println(err.Error())
 		data.Error = "Token has already been used or is expired. Please request a new verification link after logging in"
 		err = ts.ExecuteTemplate(w, "verify", data)
 		if err != nil {
@@ -385,10 +387,11 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.users.ValidateByID(userID)
+	err = app.users.VerifyEmailByID(userID)
 	if err != nil {
+		app.errorLog.Println(err.Error())
 		data.Error = "Something went wrong. Please try again later"
-		app.errorLog.Println("verify: failed to validate user:", err)
+		app.errorLog.Println("verify: failed to verify user email:", err)
 		err = ts.ExecuteTemplate(w, "verify", data)
 		if err != nil {
 			app.errorLog.Println(err.Error())
@@ -398,7 +401,7 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.infoLog.Printf("User %d validated", userID)
+	app.infoLog.Printf("Email verified for user User %d", userID)
 	err = ts.ExecuteTemplate(w, "verify", data)
 
 	if err != nil {

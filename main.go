@@ -20,7 +20,7 @@ type application struct {
 	errorLog    *log.Logger
 	infoLog     *log.Logger
 	users       *models.UserModel
-	tokens      *models.ValidationTokenModel
+	tokens      *models.TokenModel
 	cookieStore *sessions.CookieStore
 
 	emailService *services.EmailService
@@ -43,14 +43,13 @@ func main() {
 
 	var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 	store.Options = &sessions.Options{SameSite: http.SameSiteLaxMode, Secure: false}
-	infoLog.Println(os.Getenv("SESSION_KEY"))
 
 	app := &application{
 		config:      config,
 		errorLog:    errorLog,
 		infoLog:     infoLog,
 		users:       &models.UserModel{DB: db},
-		tokens:      &models.ValidationTokenModel{DB: db},
+		tokens:      &models.TokenModel{DB: db},
 		cookieStore: store,
 		emailService: services.NewEmailService(
 			config.SMTPHost,

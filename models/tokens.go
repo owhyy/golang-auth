@@ -8,19 +8,30 @@ import (
 	"time"
 )
 
-const validationTokenLength = 32
-const validationTokenTTL = 30 * time.Minute
+const emailVerificationTokenLength = 32
+const emailVerificationTokenTTL = 30 * time.Minute
 
-type ValidationToken struct {
+const passwordResetTokenLength = 32
+const passwordResetTokenTTL = 10 * time.Minute
+
+type TokenPurpose string
+
+const (
+	PasswordResetPurpose TokenPurpose = "password_reset"
+	EmailVerifyPurpose   TokenPurpose = "email_verification"
+)
+
+type Token struct {
 	ID        int64
 	UserID    int64
 	Token     string
 	ExpiresAt time.Time
 	CreatedAt time.Time
 	UsedAt    sql.NullTime
+	Purpose   TokenPurpose
 }
 
-type ValidationTokenModel struct {
+type TokenModel struct {
 	DB *DB
 }
 
@@ -32,17 +43,17 @@ func generateRandomToken(length int) (string, error) {
 	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b), nil
 }
 
-func (m *ValidationTokenModel) Create(userID int64) (string, error) {
-	token, err := generateRandomToken(validationTokenLength)
+func (m *TokenModel) createToken(userID int64, purpose TokenPurpose, length int, ttl time.Duration) (string, error) {
+	token, err := generateRandomToken(length)
 	if err != nil {
 		return "", err
 	}
 
-	expiresAt := time.Now().Add(validationTokenTTL)
+	expiresAt := time.Now().Add(ttl)
 
 	_, err = m.DB.Exec(
-		`INSERT INTO validation_tokens (user_id, token, expires_at) VALUES (?, ?, ?)`,
-		userID, token, expiresAt,
+		`INSERT INTO tokens (user_id, token, expires_at, purpose) VALUES (?, ?, ?, ?)`,
+		userID, token, expiresAt, purpose,
 	)
 	if err != nil {
 		return "", err
@@ -51,20 +62,27 @@ func (m *ValidationTokenModel) Create(userID int64) (string, error) {
 	return token, nil
 }
 
+func (m *TokenModel) CreateEmailVerificationToken(userID int64) (string, error) {
+	return m.createToken(userID, EmailVerifyPurpose, emailVerificationTokenLength, emailVerificationTokenTTL)
+}
+
+func (m *TokenModel) CreatePasswordResetToken(userID int64) (string, error) {
+	return m.createToken(userID, PasswordResetPurpose, passwordResetTokenLength, passwordResetTokenTTL)
+}
+
 var ErrInvalidOrExpiredToken = errors.New("invalid or expired token")
 
-func (m *ValidationTokenModel) Consume(token string) (int64, error) {
+func (m *TokenModel) Consume(purpose TokenPurpose, token string) (int64, error) {
 	var (
 		userID    int64
 		expiresAt time.Time
 		usedAt    sql.NullTime
 	)
-
 	err := m.DB.QueryRow(
 		`SELECT user_id, expires_at, used_at
-         FROM validation_tokens
-         WHERE token = ?`,
-		token,
+         FROM tokens
+         WHERE purpose = ? AND token = ?`,
+		purpose, token,
 	).Scan(&userID, &expiresAt, &usedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -78,8 +96,8 @@ func (m *ValidationTokenModel) Consume(token string) (int64, error) {
 	}
 
 	_, err = m.DB.Exec(
-		`UPDATE validation_tokens SET used_at = CURRENT_TIMESTAMP WHERE token = ?`,
-		token,
+		`UPDATE tokens SET used_at = CURRENT_TIMESTAMP WHERE purpose = ? AND token = ?`,
+		purpose, token,
 	)
 	if err != nil {
 		return 0, err

@@ -13,11 +13,11 @@ var (
 )
 
 type User struct {
-	ID           int64
-	Email        string
-	PasswordHash string
-	IsValid      bool
-	CreatedAt    string
+	ID            int64
+	Email         string
+	PasswordHash  string
+	EmailVerified bool
+	CreatedAt     string
 }
 
 type UserModel struct {
@@ -83,9 +83,9 @@ func (m *UserModel) EmailExists(email string) (bool, error) {
 	return exists, err
 }
 
-func (m *UserModel) ValidateByID(id int64) error {
+func (m *UserModel) VerifyEmailByID(id int64) error {
 	_, err := m.DB.Exec(
-		`UPDATE users SET is_valid = 1 WHERE id = ?`,
+		`UPDATE users SET email_verified = 1 WHERE id = ?`,
 		id,
 	)
 	return err
@@ -104,12 +104,12 @@ func (m *UserModel) GetEmailByID(id int64) (string, error) {
 func (m *UserModel) GetUserByID(id int64) (*User, error) {
 	user := &User{}
 	err := m.DB.QueryRow(
-		"SELECT id, email, is_valid, created_at FROM users WHERE id = ?",
+		"SELECT id, email, email_verified, created_at FROM users WHERE id = ?",
 		id,
 	).Scan(
 		&user.ID,
 		&user.Email,
-		&user.IsValid,
+		&user.EmailVerified,
 		&user.CreatedAt,
 	)
 	return user, err

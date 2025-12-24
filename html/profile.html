@@ -15,10 +15,10 @@
             <hgroup>
                 <h1>Hello, {{.Email}}</h1>
                 <p>Welcome to your profile</p>
-                {{ if .IsValid}}
-                    <p>Your account is validated</p>
+                {{ if .EmailVerified}}
+                    <p>Your email is verified</p>
                 {{else}}
-                    <p>Your account is not validated. Check your email for instructions on how to validate it</p>
+                    <p>Your email is not verified. Check your email for instructions on how to do it</p>
                     {{/*    todo: add resend confirmation email functionality     */}}
                 {{end}}
             </hgroup>
