@@ -301,6 +301,50 @@ func (app *application) signup(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
 
+func (app *application) requestPasswdReset(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/request-password-reset" {
+		http.NotFound(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	session, err := app.cookieStore.Get(r, "auth-session")
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if session.IsNew || session.Values["userID"] == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	id, ok := session.Values["userID"].(int64)
+	if !ok {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	user, err := app.users.GetUserByID(id)
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	err = app.emailService.SendResetPasswordEmail(user.Email, app.config.BaseURL, "123")
+	if err != nil {
+		app.errorLog.Println(err.Error())
+	}
+
+	w.Header().Set("HX-Redirect", "/")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
 func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 	data := struct{ Error string }{}
 	if r.Method != http.MethodGet {

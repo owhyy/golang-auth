@@ -81,3 +81,23 @@ func (s *EmailService) SendAccountVerifiedEmail(to string) error {
 
 	return s.SendEmail(to, subject, body)
 }
+
+func (s *EmailService) SendResetPasswordEmail(to, baseURL, token string) error {
+	verifyURL := fmt.Sprintf("%s/reset-password?token=%s", baseURL, token)
+
+	subject := "Reset Password"
+
+	body := fmt.Sprintf(`
+		<html>
+		<body>
+			<h2>Welcome!</h2>
+			<p>Please verify your email address by clicking the link below:</p>
+			<p><a href="%s">Verify Email</a></p>
+			<p>This link will expire in 30 minutes.</p>
+			<p>If you didn't sign up, please ignore this email.</p>
+		</body>
+		</html>
+	`, verifyURL)
+
+	return s.SendEmail(to, subject, body)
+}
