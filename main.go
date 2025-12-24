@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -16,14 +17,14 @@ import (
 var staticFS embed.FS
 
 type application struct {
-	config      *Config
-	errorLog    *log.Logger
-	infoLog     *log.Logger
-	users       *models.UserModel
-	tokens      *models.TokenModel
-	cookieStore *sessions.CookieStore
-
-	emailService *services.EmailService
+	config        *Config
+	errorLog      *log.Logger
+	infoLog       *log.Logger
+	users         *models.UserModel
+	tokens        *models.TokenModel
+	cookieStore   *sessions.CookieStore
+	emailService  *services.EmailService
+	templateCache map[string]*template.Template
 }
 
 func main() {
@@ -32,12 +33,17 @@ func main() {
 
 	config, err := LoadConfig()
 	if err != nil {
-		errorLog.Fatal(err)
+		errorLog.Fatal(err.Error())
+	}
+
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		errorLog.Fatal(err.Error())
 	}
 
 	db, err := models.NewDB("./users.db")
 	if err != nil {
-		errorLog.Fatal(err)
+		errorLog.Fatal(err.Error())
 	}
 	defer func(db *models.DB) {
 		err := db.Close()
@@ -50,12 +56,13 @@ func main() {
 	store.Options = &sessions.Options{SameSite: http.SameSiteLaxMode, Secure: false}
 
 	app := &application{
-		config:      config,
-		errorLog:    errorLog,
-		infoLog:     infoLog,
-		users:       &models.UserModel{DB: db},
-		tokens:      &models.TokenModel{DB: db},
-		cookieStore: store,
+		config:        config,
+		templateCache: templateCache,
+		errorLog:      errorLog,
+		infoLog:       infoLog,
+		users:         &models.UserModel{DB: db},
+		tokens:        &models.TokenModel{DB: db},
+		cookieStore:   store,
 		emailService: &services.EmailService{
 			Host:     config.SMTPHost,
 			Port:     config.SMTPPort,

@@ -1,15 +1,6 @@
-{{define "home"}}
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Welcome</title>
-    <link href="/static/pico.orange.min.css" rel="stylesheet">
-</head>
-<body>
-<main class="container">
-    <article>
+{{define "title"}} Home {{ end}}
+{{define "main"}}
+    <article style="width: 100%; max-width: 600px; margin: 0 auto; text-align: center;">
         <hgroup>
             <h1>Welcome</h1>
             <p>Please sign in or log in to continue</p>
@@ -19,8 +10,4 @@
             <a class="secondary" href="/login" role="button">Log In</a>
         </div>
     </article>
-</main>
-</body>
-</html>
 {{end}}
-

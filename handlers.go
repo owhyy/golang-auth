@@ -3,64 +3,29 @@ package main
 import (
 	_ "embed"
 	"errors"
-	"html/template"
 	"net/http"
 	"owhyy/simple-auth/models"
 
 	passwordvalidator "github.com/wagslane/go-password-validator"
 )
 
-//go:embed html/home.html
-var homeTmpl string
-
-//go:embed html/profile.html
-var profileTmpl string
-
-//go:embed html/login.html
-var loginTmpl string
-
-//go:embed html/signup.html
-var signUpTmpl string
-
-//go:embed html/verify.html
-var verifyTmpl string
-
-func (app *application) renderTemplate(w http.ResponseWriter, name string, tmpl string, data interface{}) {
-	ts, err := template.New(name).Parse(tmpl)
-	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	err = ts.ExecuteTemplate(w, name, nil)
-	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-}
-
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	session, err := app.cookieStore.Get(r, "auth-session")
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 	if !session.IsNew && session.Values["userID"] != nil {
 		http.Redirect(w, r, "/profile", http.StatusSeeOther)
 		return
 	}
-
-	app.renderTemplate(w, "home", homeTmpl, nil)
+	app.render(w, r, http.StatusOK, "home.html", templateData{})
 }
 
 func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 	session, err := app.cookieStore.Get(r, "auth-session")
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 
@@ -71,25 +36,24 @@ func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 
 	id, ok := session.Values["userID"].(int64)
 	if !ok {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, errors.New("invalid user id"))
 		return
 	}
 
 	user, err := app.users.GetUserByID(id)
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
+	data := templateData{User: *user}
 
-	app.renderTemplate(w, "profile", profileTmpl, user)
+	app.render(w, r, http.StatusOK, "profile.html", data)
 }
 
 func (app *application) loginGet(w http.ResponseWriter, r *http.Request) {
 	session, err := app.cookieStore.Get(r, "auth-session")
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 
@@ -97,21 +61,20 @@ func (app *application) loginGet(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/profile", http.StatusSeeOther)
 		return
 	}
-	app.renderTemplate(w, "login", loginTmpl, nil)
+
+	app.render(w, r, http.StatusOK, "login.html", templateData{})
 }
 
 func (app *application) loginPost(w http.ResponseWriter, r *http.Request) {
 	session, err := app.cookieStore.Get(r, "auth-session")
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 
 	err = r.ParseForm()
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 
@@ -132,8 +95,7 @@ func (app *application) loginPost(w http.ResponseWriter, r *http.Request) {
 	session.Values["userID"] = id
 	err = session.Save(r, w)
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 
@@ -147,16 +109,14 @@ func (app *application) loginPost(w http.ResponseWriter, r *http.Request) {
 func (app *application) logout(w http.ResponseWriter, r *http.Request) {
 	session, err := app.cookieStore.Get(r, "auth-session")
 	if err != nil {
-		app.errorLog.Println(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 
 	session.Options.MaxAge = -1
 	session.Values = nil
 	if err := session.Save(r, w); err != nil {
-		app.errorLog.Println(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 
@@ -165,14 +125,13 @@ func (app *application) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) signupGet(w http.ResponseWriter, r *http.Request) {
-	app.renderTemplate(w, "signup", signUpTmpl, nil)
+	app.render(w, r, http.StatusOK, "signup.html", templateData{})
 }
 
 func (app *application) signupPost(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		w.Write([]byte("Bad Request"))
+		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -229,8 +188,7 @@ func (app *application) signupPost(w http.ResponseWriter, r *http.Request) {
 func (app *application) requestPasswdReset(w http.ResponseWriter, r *http.Request) {
 	session, err := app.cookieStore.Get(r, "auth-session")
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 
@@ -241,21 +199,20 @@ func (app *application) requestPasswdReset(w http.ResponseWriter, r *http.Reques
 
 	id, ok := session.Values["userID"].(int64)
 	if !ok {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, errors.New("invalid user id"))
 		return
 	}
 
 	user, err := app.users.GetUserByID(id)
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 
 	token, err := app.tokens.CreatePasswordResetToken(user.ID)
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
+		return
 	}
 
 	err = app.emailService.SendResetPasswordEmail(user.Email, app.config.BaseURL, token)
@@ -268,24 +225,12 @@ func (app *application) requestPasswdReset(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *application) verify(w http.ResponseWriter, r *http.Request) {
-	data := struct{ Error string }{}
-
-	ts, err := template.New("verify").Parse(verifyTmpl)
-	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+	data := templateData{}
 
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		data.Error = "Verification link is invalid. Try requesting a new verification link after logging in"
-		err = ts.ExecuteTemplate(w, "verify", data)
-		if err != nil {
-			app.errorLog.Println(err.Error())
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
+		app.render(w, r, http.StatusBadRequest, "signup.html", data)
 		return
 	}
 
@@ -295,12 +240,7 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.errorLog.Println(err.Error())
 		data.Error = "Token has already been used or is expired. Please request a new verification link after logging in"
-		err = ts.ExecuteTemplate(w, "verify", data)
-		if err != nil {
-			app.errorLog.Println(err.Error())
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
+		app.render(w, r, http.StatusBadRequest, "signup.html", data)
 		return
 	}
 
@@ -309,27 +249,22 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 		app.errorLog.Println(err.Error())
 		data.Error = "Something went wrong. Please try again later"
 		app.errorLog.Println("verify: failed to verify user email:", err)
-		err = ts.ExecuteTemplate(w, "verify", data)
-		if err != nil {
-			app.errorLog.Println(err.Error())
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
+		app.render(w, r, http.StatusBadRequest, "signup.html", data)
 		return
 	}
 
 	app.infoLog.Printf("Email verified for user User %d", userID)
-	err = ts.ExecuteTemplate(w, "verify", data)
+	app.render(w, r, http.StatusOK, "signup.html", data)
 
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
+		return
 	}
 
 	email, err := app.users.GetEmailByID(userID)
 	if err != nil {
-		app.errorLog.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
+		return
 	}
 
 	err = app.emailService.SendAccountVerifiedEmail(email)
