@@ -39,9 +39,14 @@ func main() {
 	if err != nil {
 		errorLog.Fatal(err)
 	}
-	defer db.Close()
+	defer func(db *models.DB) {
+		err := db.Close()
+		if err != nil {
+			errorLog.Fatal(err)
+		}
+	}(db)
 
-	var store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+	var store = sessions.NewCookieStore([]byte(config.SessionKey))
 	store.Options = &sessions.Options{SameSite: http.SameSiteLaxMode, Secure: false}
 
 	app := &application{
@@ -51,13 +56,13 @@ func main() {
 		users:       &models.UserModel{DB: db},
 		tokens:      &models.TokenModel{DB: db},
 		cookieStore: store,
-		emailService: services.NewEmailService(
-			config.SMTPHost,
-			config.SMTPPort,
-			config.SMTPUsername,
-			config.SMTPPassword,
-			config.SMTPFrom,
-		),
+		emailService: &services.EmailService{
+			Host:     config.SMTPHost,
+			Port:     config.SMTPPort,
+			Username: config.SMTPUsername,
+			Password: config.SMTPPassword,
+			From:     config.SMTPFrom,
+		},
 	}
 
 	mux := http.NewServeMux()

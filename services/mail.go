@@ -6,51 +6,35 @@ import (
 )
 
 type EmailService struct {
-	host     string
-	port     string
-	username string
-	password string
-	from     string
-}
-
-func NewEmailService(host, port, username, password, from string) *EmailService {
-	return &EmailService{
-		host:     host,
-		port:     port,
-		username: username,
-		password: password,
-		from:     from,
-	}
+	Host     string
+	Port     string
+	Username string
+	Password string
+	From     string
 }
 
 func (s *EmailService) SendEmail(to, subject, body string) error {
 	msg := []byte(
-		"From: " + s.from + "\r\n" +
+		"From: " + s.From + "\r\n" +
 			"To: " + to + "\r\n" +
 			"Subject: " + subject + "\r\n" +
 			"MIME-version: 1.0;\r\n" +
 			"Content-Type: text/html; charset=\"UTF-8\";\r\n" +
 			"\r\n" +
 			body + "\r\n")
-
-	auth := smtp.PlainAuth("", s.username, s.password, s.host)
-
-	err := smtp.SendMail(
-		s.host+":"+s.port,
+	auth := smtp.PlainAuth("", s.Username, s.Password, s.Host)
+	return smtp.SendMail(
+		s.Host+":"+s.Port,
 		auth,
-		s.from,
+		s.From,
 		[]string{to},
 		msg,
 	)
-
-	return err
 }
 
 func (s *EmailService) SendVerificationEmail(to, baseURL, token string) error {
 	verifyURL := fmt.Sprintf("%s/verify?token=%s", baseURL, token)
-
 	subject := "Verify your email address"
-
 	body := fmt.Sprintf(`
 		<html>
 		<body>
@@ -68,7 +52,6 @@ func (s *EmailService) SendVerificationEmail(to, baseURL, token string) error {
 
 func (s *EmailService) SendAccountVerifiedEmail(to string) error {
 	subject := "Email verified successfully"
-
 	body := `
 		<html>
 		<body>
@@ -78,15 +61,12 @@ func (s *EmailService) SendAccountVerifiedEmail(to string) error {
 		</body>
 		</html>
 `
-
 	return s.SendEmail(to, subject, body)
 }
 
 func (s *EmailService) SendResetPasswordEmail(to, baseURL, token string) error {
 	verifyURL := fmt.Sprintf("%s/reset-password?token=%s", baseURL, token)
-
 	subject := "Reset Password"
-
 	body := fmt.Sprintf(`
 		<html>
 		<body>
