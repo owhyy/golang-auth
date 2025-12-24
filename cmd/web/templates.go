@@ -2,20 +2,20 @@ package main
 
 import (
 	"html/template"
-	"owhyy/simple-auth/models"
+	"owhyy/simple-auth/internal/models"
 	"path/filepath"
 )
 
 func newTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
-	pages, err := filepath.Glob("./html/pages/*.html")
+	pages, err := filepath.Glob("./ui/html/pages/*.html")
 	if err != nil {
 		return nil, err
 	}
 	for _, page := range pages {
 		name := filepath.Base(page)
 		files := []string{
-			"./html/base.html",
+			"./ui/html/base.html",
 			page,
 		}
 		ts, err := template.ParseFiles(files...)

@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"errors"
 	"net/http"
-	"owhyy/simple-auth/models"
+	"owhyy/simple-auth/internal/models"
 
 	passwordvalidator "github.com/wagslane/go-password-validator"
 )
@@ -256,11 +256,7 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 	app.infoLog.Printf("Email verified for user User %d", userID)
 	app.render(w, r, http.StatusOK, "signup.html", data)
 
-	if err != nil {
-		app.serverError(w, r, err)
-		return
-	}
-
+	// TODO: check what happens in this case
 	email, err := app.users.GetEmailByID(userID)
 	if err != nil {
 		app.serverError(w, r, err)

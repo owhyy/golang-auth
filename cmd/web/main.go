@@ -1,23 +1,20 @@
 package main
 
 import (
-	"embed"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
-
-	"owhyy/simple-auth/models"
-	"owhyy/simple-auth/services"
+	"owhyy/simple-auth/internal"
+	"owhyy/simple-auth/internal/models"
+	"owhyy/simple-auth/internal/services"
+	"owhyy/simple-auth/ui"
 
 	"github.com/gorilla/sessions"
 )
 
-//go:embed static/*
-var staticFS embed.FS
-
 type application struct {
-	config        *Config
+	config        *internal.Config
 	errorLog      *log.Logger
 	infoLog       *log.Logger
 	users         *models.UserModel
@@ -31,7 +28,7 @@ func main() {
 	infoLog := log.New(os.Stdout, "INFO\t", log.LstdFlags)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.LstdFlags|log.Lshortfile)
 
-	config, err := LoadConfig()
+	config, err := internal.LoadConfig()
 	if err != nil {
 		errorLog.Fatal(err.Error())
 	}
@@ -74,7 +71,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	fileServer := http.FileServer(http.FS(staticFS))
+	fileServer := http.FileServerFS(ui.Files)
 	mux.Handle("GET /static/", fileServer)
 
 	mux.HandleFunc("GET /", app.home)
