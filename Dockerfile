@@ -9,7 +9,7 @@ COPY go.mod ./
 COPY . .
 
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
-    go build -a -installsuffix cgo \
+    go build ./cmd/web -a -installsuffix cgo \
     -ldflags "-s -w -extldflags '-static'" \
     -o simple-auth .
 

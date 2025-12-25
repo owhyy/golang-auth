@@ -11,7 +11,7 @@ See `.env.example` for configuration options
 - Locally:
 
 ```
-go run main.go handlers.go
+go run ./cmd/web
 ```
 
 - Dockerfile (recommended):
