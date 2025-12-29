@@ -114,3 +114,14 @@ func (m *UserModel) GetUserByID(id int64) (*User, error) {
 	)
 	return user, err
 }
+
+func (m *UserModel) CanCreatePasswordRequest(id int64) (bool, error) {
+	var count int
+	err := m.DB.QueryRow(
+		"SELECT count(1) FROM tokens WHERE used_at ISNULL AND user_id = ? AND DATE(created_at) = DATE('now')",
+		id,
+	).Scan(
+		&count,
+	)
+	return count < 4, err
+}

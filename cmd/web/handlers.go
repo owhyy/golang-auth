@@ -154,6 +154,16 @@ func (app *application) signupPost(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) requestPasswdReset(w http.ResponseWriter, r *http.Request) {
 	user := app.getAuthenticatedUser(r)
+	canRequestReset, err := app.users.CanCreatePasswordRequest(user.ID)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	if !canRequestReset {
+		app.renderHTMXError(w, "Too many password requests today. Try again tommorrow.")
+		return
+	}
+
 	token, err := app.tokens.CreatePasswordResetToken(user.ID)
 	if err != nil {
 		app.serverError(w, r, err)
