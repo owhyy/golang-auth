@@ -10,12 +10,7 @@ import (
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	session, err := app.cookieStore.Get(r, "auth-session")
-	if err != nil {
-		app.serverError(w, r, err)
-		return
-	}
-	if !session.IsNew && session.Values["userID"] != nil {
+	if app.isAuthenticated(r) {
 		http.Redirect(w, r, "/profile", http.StatusSeeOther)
 		return
 	}
@@ -23,41 +18,13 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) profile(w http.ResponseWriter, r *http.Request) {
-	session, err := app.cookieStore.Get(r, "auth-session")
-	if err != nil {
-		app.serverError(w, r, err)
-		return
-	}
-
-	if session.IsNew || session.Values["userID"] == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	id, ok := session.Values["userID"].(int64)
-	if !ok {
-		app.serverError(w, r, errors.New("invalid user id"))
-		return
-	}
-
-	user, err := app.users.GetUserByID(id)
-	if err != nil {
-		app.serverError(w, r, err)
-		return
-	}
+	user := app.getAuthenticatedUser(r)
 	data := templateData{User: *user}
-
 	app.render(w, r, http.StatusOK, "profile.html", data)
 }
 
 func (app *application) loginGet(w http.ResponseWriter, r *http.Request) {
-	session, err := app.cookieStore.Get(r, "auth-session")
-	if err != nil {
-		app.serverError(w, r, err)
-		return
-	}
-
-	if !session.IsNew || session.Values["userID"] != nil {
+	if app.isAuthenticated(r) {
 		http.Redirect(w, r, "/profile", http.StatusSeeOther)
 		return
 	}
@@ -66,6 +33,11 @@ func (app *application) loginGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) loginPost(w http.ResponseWriter, r *http.Request) {
+	if app.isAuthenticated(r) {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
 	session, err := app.cookieStore.Get(r, "auth-session")
 	if err != nil {
 		app.serverError(w, r, err)
@@ -107,12 +79,7 @@ func (app *application) loginPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) logout(w http.ResponseWriter, r *http.Request) {
-	session, err := app.cookieStore.Get(r, "auth-session")
-	if err != nil {
-		app.serverError(w, r, err)
-		return
-	}
-
+	session, _ := app.cookieStore.Get(r, "auth-session")
 	session.Options.MaxAge = -1
 	session.Values = nil
 	if err := session.Save(r, w); err != nil {
@@ -186,29 +153,7 @@ func (app *application) signupPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) requestPasswdReset(w http.ResponseWriter, r *http.Request) {
-	session, err := app.cookieStore.Get(r, "auth-session")
-	if err != nil {
-		app.serverError(w, r, err)
-		return
-	}
-
-	if session.IsNew || session.Values["userID"] == nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	id, ok := session.Values["userID"].(int64)
-	if !ok {
-		app.serverError(w, r, errors.New("invalid user id"))
-		return
-	}
-
-	user, err := app.users.GetUserByID(id)
-	if err != nil {
-		app.serverError(w, r, err)
-		return
-	}
-
+	user := app.getAuthenticatedUser(r)
 	token, err := app.tokens.CreatePasswordResetToken(user.ID)
 	if err != nil {
 		app.serverError(w, r, err)
@@ -234,8 +179,7 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: ideally this proccess should be atomic
-	// but for an MVP it's alright
+	// TODO: this proccess should be atomic
 	userID, err := app.tokens.Consume(models.EmailVerifyPurpose, token)
 	if err != nil {
 		app.errorLog.Println(err.Error())

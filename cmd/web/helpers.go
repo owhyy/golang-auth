@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"owhyy/simple-auth/internal/models"
 )
 
 func (app *application) render(w http.ResponseWriter, r *http.Request, status int, page string, data templateData) {
@@ -30,4 +31,29 @@ func (app *application) serverError(w http.ResponseWriter, r *http.Request, err 
 
 func (app *application) clientError(w http.ResponseWriter, status int) {
 	http.Error(w, http.StatusText(status), status)
+}
+
+func (app *application) isAuthenticated(r *http.Request) bool {
+	session, err := app.cookieStore.Get(r, "auth-session")
+	if err != nil {
+		return false
+	}
+	return session.Values["userID"] != nil && !session.IsNew
+}
+
+func (app *application) getAuthenticatedUser(r *http.Request) *models.User {
+	session, err := app.cookieStore.Get(r, "auth-session")
+	if err != nil {
+		return nil
+	}
+	id, ok := session.Values["userID"].(int64)
+	if !ok || session.IsNew {
+		return nil
+	}
+
+	user, err := app.users.GetUserByID(id)
+	if err != nil {
+		return nil
+	}
+	return user
 }
