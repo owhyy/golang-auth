@@ -101,7 +101,7 @@ func (m *UserModel) GetEmailByID(id int64) (string, error) {
 	return email, err
 }
 
-func (m *UserModel) GetUserByID(id int64) (*User, error) {
+func (m *UserModel) GetByID(id int64) (*User, error) {
 	user := &User{}
 	err := m.DB.QueryRow(
 		"SELECT id, email, email_verified, created_at FROM users WHERE id = ?",
@@ -115,10 +115,24 @@ func (m *UserModel) GetUserByID(id int64) (*User, error) {
 	return user, err
 }
 
+func (m *UserModel) GetByEmail(email string) (*User, error) {
+	user := &User{}
+	err := m.DB.QueryRow(
+		"SELECT id, email, email_verified, created_at FROM users WHERE email = ?",
+		email,
+	).Scan(
+		&user.ID,
+		&user.Email,
+		&user.EmailVerified,
+		&user.CreatedAt,
+	)
+	return user, err
+}
+
 func (m *UserModel) CanCreatePasswordRequest(id int64) (bool, error) {
 	var count int
 	err := m.DB.QueryRow(
-		"SELECT count(1) FROM tokens WHERE used_at ISNULL AND user_id = ? AND DATE(created_at) = DATE('now')",
+		"SELECT count(1) FROM tokens WHERE user_id = ? AND DATE(created_at) = DATE('now')",
 		id,
 	).Scan(
 		&count,

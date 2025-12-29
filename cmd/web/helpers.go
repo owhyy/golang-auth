@@ -51,7 +51,7 @@ func (app *application) getAuthenticatedUser(r *http.Request) *models.User {
 		return nil
 	}
 
-	user, err := app.users.GetUserByID(id)
+	user, err := app.users.GetByID(id)
 	if err != nil {
 		return nil
 	}

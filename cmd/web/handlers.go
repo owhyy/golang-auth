@@ -152,33 +152,63 @@ func (app *application) signupPost(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (app *application) requestPasswdReset(w http.ResponseWriter, r *http.Request) {
-	user := app.getAuthenticatedUser(r)
-	canRequestReset, err := app.users.CanCreatePasswordRequest(user.ID)
+func (app *application) requestPasswdResetGet(w http.ResponseWriter, r *http.Request) {
+	if app.isAuthenticated(r) {
+		http.Redirect(w, r, "/profile", http.StatusSeeOther)
+		return
+	}
+
+	app.render(w, r, http.StatusOK, "forgot_password.html", templateData{})
+}
+
+func (app *application) requestPasswdResetPost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
+
+	email := r.PostForm.Get("email")
+	app.infoLog.Println(email)
+	app.infoLog.Println(r.PostForm)
+	user, err := app.users.GetByEmail(email)
+	w.Write([]byte(`
+	<hgroup>
+		<h1>Check your inbox</h1>
+		<p>You will soon receive an email containing password reset instructions</p>
+	</hgroup>
+		<a class="primary" href="/" role="button">Go back</a>
+`))
+
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		return
+	}
+
+	canRequestReset, err := app.users.CanCreatePasswordRequest(user.ID)
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		return
+	}
 	if !canRequestReset {
-		app.renderHTMXError(w, "Too many password requests today. Try again tommorrow.")
+		app.errorLog.Println("Too many password reset requests for " + email)
 		return
 	}
 
 	token, err := app.tokens.CreatePasswordResetToken(user.ID)
 	if err != nil {
-		app.serverError(w, r, err)
+		app.errorLog.Println(err.Error())
 		return
 	}
 
+	// This should be done asynchronously, because
+	// right now it is possible to tell if an email exists
+	// or not by looking at how long the request takes
 	err = app.emailService.SendResetPasswordEmail(user.Email, app.config.BaseURL, token)
 	if err != nil {
 		app.errorLog.Println(err.Error())
-		app.renderHTMXError(w, "Failed to send password reset email. Try again later.")
 		return
 	}
-
-	app.renderHTMXSuccess(w, "Password reset requested. Check your email for the reset link.")
-	return
 }
 
 func (app *application) verify(w http.ResponseWriter, r *http.Request) {
