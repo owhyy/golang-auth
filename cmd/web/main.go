@@ -19,6 +19,7 @@ type application struct {
 	infoLog       *log.Logger
 	users         *models.UserModel
 	tokens        *models.TokenModel
+	posts         *models.PostModel
 	cookieStore   *sessions.CookieStore
 	emailService  *services.EmailService
 	templateCache map[string]*template.Template
@@ -59,6 +60,7 @@ func main() {
 		infoLog:       infoLog,
 		users:         &models.UserModel{DB: db},
 		tokens:        &models.TokenModel{DB: db},
+		posts:         &models.PostModel{DB: db},
 		cookieStore:   store,
 		emailService: &services.EmailService{
 			Host:     config.SMTPHost,

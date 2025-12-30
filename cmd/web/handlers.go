@@ -10,11 +10,13 @@ import (
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	if app.isAuthenticated(r) {
-		http.Redirect(w, r, "/profile", http.StatusSeeOther)
-		return
+	data := app.newTemplateData(r)
+	posts, err := app.posts.GetPublished(20)
+	if err != nil {
+		app.serverError(w, r, err)
 	}
-	app.render(w, r, http.StatusOK, "home.html", app.newTemplateData(r))
+	data.Posts = posts
+	app.render(w, r, http.StatusOK, "home.html", data)
 }
 
 func (app *application) profile(w http.ResponseWriter, r *http.Request) {

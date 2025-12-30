@@ -1,13 +1,40 @@
 {{define "title"}} Home {{ end}}
 {{define "main"}}
-    <article style="width: 100%; max-width: 600px; margin: 0 auto; text-align: center;">
-        <hgroup>
-            <h1>Welcome</h1>
-            <p>Please sign in or log in to continue</p>
+    <section>
+        <hgroup style="text-align: center; margin-bottom: 2rem;">
+            <h1>Check these posts out</h1>
         </hgroup>
-        <div style="display: flex; gap: 1rem; justify-content: center;">
-            <a href="/signup" role="button">Sign Up</a>
-            <a class="secondary" href="/login" role="button">Log In</a>
-        </div>
-    </article>
+
+        {{if .Posts}}
+            <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                {{range .Posts}}
+                    <article>
+                        <h2 style="margin-top: 0;">
+                            <a href="/posts/{{.Slug}}">
+                                {{.Title}}
+                            </a>
+                        </h2>
+
+                        {{if .Excerpt}}
+                            <p>{{.Excerpt}}</p>
+                        {{end}}
+
+                        {{if .FeaturedImage}}
+                            <img alt="blog" src="{{.FeaturedImage}}" style="width: 100%; height: auto;">
+                        {{end}}
+
+                        {{if .PublishedAt}}
+                            <small style="color: #555;">
+                                Published {{.PublishedAt.Format "Jan 2, 2006"}}
+                            </small>
+                        {{end}}
+
+                    </article>
+                {{end}}
+            </div>
+        {{else}}
+            <p style="text-align: center;">No posts yet.</p>
+        {{end}}
+    </section>
+
 {{end}}

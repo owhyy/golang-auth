@@ -36,4 +36,5 @@ type templateData struct {
 	Token           string
 	IsAuthenticated bool
 	CurrentPage     string
+	Posts           []models.Post
 }
