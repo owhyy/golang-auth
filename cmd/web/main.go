@@ -84,6 +84,8 @@ func main() {
 	mux.HandleFunc("POST /logout", app.logout)
 	mux.HandleFunc("GET /request-password-reset", app.requestPasswdResetGet)
 	mux.HandleFunc("POST /request-password-reset", app.requestPasswdResetPost)
+	mux.HandleFunc("GET /reset-password", app.resetPasswordGet)
+	mux.HandleFunc("POST /reset-password", app.resetPasswordPost)
 
 	srv := &http.Server{Addr: "0.0.0.0:8080", ErrorLog: errorLog, Handler: mux}
 	infoLog.Println("Starting server on 0.0.0.0:8080")

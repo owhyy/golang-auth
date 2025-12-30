@@ -32,4 +32,5 @@ func newTemplateCache() (map[string]*template.Template, error) {
 type templateData struct {
 	User  models.User
 	Error string
+	Token string
 }

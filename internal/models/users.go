@@ -24,6 +24,20 @@ type UserModel struct {
 	DB *DB
 }
 
+func (m *UserModel) SetPassword(id int64, password string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	_, err = m.DB.Exec("UPDATE users SET password_hash = $1 WHERE id = $2", id, string(hashedPassword))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *UserModel) Create(email, password string) (int64, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

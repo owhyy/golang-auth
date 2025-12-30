@@ -164,7 +164,7 @@ func (app *application) requestPasswdResetGet(w http.ResponseWriter, r *http.Req
 func (app *application) requestPasswdResetPost(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		app.serverError(w, r, err)
+		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -211,13 +211,80 @@ func (app *application) requestPasswdResetPost(w http.ResponseWriter, r *http.Re
 	}
 }
 
+func (app *application) resetPasswordGet(w http.ResponseWriter, r *http.Request) {
+	data := templateData{}
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		data.Error = "Verification link is invalid. Try requesting a new password reset"
+		app.render(w, r, http.StatusBadRequest, "password_reset.html", data)
+		return
+	}
+
+	exists, err := app.tokens.ExistsValid(models.PasswordResetPurpose, token)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	if !exists {
+		data.Error = "Token has already been used or is expired. Try requesting a new password reset"
+		app.render(w, r, http.StatusBadRequest, "password_reset.html", data)
+		return
+	}
+
+	data.Token = token
+	app.render(w, r, http.StatusOK, "password_reset.html", data)
+}
+
+func (app *application) resetPasswordPost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	token := r.PostForm.Get("token")
+	password := r.PostForm.Get("password")
+	passwordConfirm := r.PostForm.Get("confirm_password")
+	if token == "" || password == "" || passwordConfirm == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// Only case where we have to show error to the UI
+	// because it can happen because of the user.
+	// All other errors should not normally happen
+	// so it's safe to return them as API errors
+	if password != passwordConfirm {
+		app.renderHTMXError(w, "Passwords do not match")
+		return
+	}
+
+	userID, err := app.tokens.Consume(models.PasswordResetPurpose, token)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	err = app.users.SetPassword(userID, password)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.Write([]byte(`<div id="main" hx-swap-oob=true>
+            <h1>Password updated successfully ✅</h1>
+            <p>Your password has been successfully changed. You can proceed to log in.</p>
+            <a href="/login" role="button">Go to login</a></div>`))
+}
+
 func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 	data := templateData{}
 
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		data.Error = "Verification link is invalid. Try requesting a new verification link after logging in"
-		app.render(w, r, http.StatusBadRequest, "signup.html", data)
+		app.render(w, r, http.StatusBadRequest, "verify.html", data)
 		return
 	}
 
@@ -226,7 +293,7 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.errorLog.Println(err.Error())
 		data.Error = "Token has already been used or is expired. Please request a new verification link after logging in"
-		app.render(w, r, http.StatusBadRequest, "signup.html", data)
+		app.render(w, r, http.StatusBadRequest, "verify.html", data)
 		return
 	}
 
@@ -235,12 +302,12 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 		app.errorLog.Println(err.Error())
 		data.Error = "Something went wrong. Please try again later"
 		app.errorLog.Println("verify: failed to verify user email:", err)
-		app.render(w, r, http.StatusBadRequest, "signup.html", data)
+		app.render(w, r, http.StatusBadRequest, "verify.html", data)
 		return
 	}
 
 	app.infoLog.Printf("Email verified for user User %d", userID)
-	app.render(w, r, http.StatusOK, "signup.html", data)
+	app.render(w, r, http.StatusOK, "verify.html", data)
 
 	// TODO: check what happens in this case
 	email, err := app.users.GetEmailByID(userID)

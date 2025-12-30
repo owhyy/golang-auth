@@ -72,6 +72,17 @@ func (m *TokenModel) CreatePasswordResetToken(userID int64) (string, error) {
 
 var ErrInvalidOrExpiredToken = errors.New("invalid or expired token")
 
+func (m *TokenModel) ExistsValid(purpose TokenPurpose, token string) (bool, error) {
+	var exists bool
+	err := m.DB.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM tokens WHERE purpose = $1 AND token = $2 AND used_at ISNULL AND DATE(expires_at) >= DATE('now'))",
+		purpose, token).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 func (m *TokenModel) Consume(purpose TokenPurpose, token string) (int64, error) {
 	var (
 		userID    int64
