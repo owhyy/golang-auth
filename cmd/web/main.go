@@ -38,7 +38,7 @@ func main() {
 		errorLog.Fatal(err.Error())
 	}
 
-	db, err := models.NewDB("./users.db")
+	db, err := models.Migrate("./app.db")
 	if err != nil {
 		errorLog.Fatal(err.Error())
 	}

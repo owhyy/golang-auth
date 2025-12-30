@@ -9,7 +9,7 @@ simple-auth
 *.out
 
 # Local databases
-users.db
+app.db
 tmp
 *.log
 
