@@ -1,7 +1,7 @@
 {{define "title"}} Home {{ end}}
 {{define "main"}}
     <section>
-        <hgroup style="text-align: center; margin-bottom: 2rem;">
+        <hgroup style="text-align: center; margin-bottom: 2rem; align-items: flex-center;">
             <h1>Check these posts out</h1>
         </hgroup>
 
@@ -10,7 +10,7 @@
                 {{range .Posts}}
                     <article>
                         <h2 style="margin-top: 0;">
-                            <a href="/posts/{{.Slug}}">
+                            <a href="/posts/view/{{.Slug}}">
                                 {{.Title}}
                             </a>
                         </h2>

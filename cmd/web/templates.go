@@ -37,4 +37,5 @@ type templateData struct {
 	IsAuthenticated bool
 	CurrentPage     string
 	Posts           []models.Post
+	Post            models.Post
 }

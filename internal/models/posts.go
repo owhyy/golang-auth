@@ -2,9 +2,13 @@ package models
 
 import (
 	"time"
+	"errors"
+	"database/sql"
 )
 
 type PostStatus string
+
+var ErrRecordNotFound = errors.New("record not found")
 
 const (
 	Draft     PostStatus = "draft"
@@ -84,4 +88,50 @@ func (m *PostModel) GetPublished(limit uint) ([]Post, error) {
 		return nil, err
 	}
 	return posts, nil
+}
+
+func (m *PostModel) GetBySlug(slug string) (*Post, error) {
+	query := `
+		SELECT
+			id,
+			title,
+			slug,
+			content,
+			excerpt,
+			author_id,
+			status,
+			published_at,
+			created_at,
+			updated_at,
+			featured_image
+		FROM posts
+		WHERE slug = $1
+		  AND status = 'published'
+		LIMIT 1
+	`
+
+	var p Post
+
+	err := m.DB.QueryRow(query, slug).Scan(
+		&p.ID,
+		&p.Title,
+		&p.Slug,
+		&p.Content,
+		&p.Excerpt,
+		&p.AuthorID,
+		&p.Status,
+		&p.PublishedAt,
+		&p.CreatedAt,
+		&p.UpdatedAt,
+		&p.FeaturedImage,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	return &p, nil
 }

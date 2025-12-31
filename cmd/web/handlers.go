@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"owhyy/simple-auth/internal/models"
+	"strings"
 
 	passwordvalidator "github.com/wagslane/go-password-validator"
 )
@@ -323,4 +324,26 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.errorLog.Println("Failed send verification email to " + email + err.Error())
 	}
+}
+
+func (app *application) viewPost(w http.ResponseWriter, r *http.Request) {
+	slug := strings.TrimPrefix(r.URL.Path, "/posts/view/")
+	if slug == "" {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	post, err := app.posts.GetBySlug(slug)
+	if err != nil {
+		if errors.Is(err, models.ErrRecordNotFound) {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+		app.serverError(w, r, err)
+		return
+	}
+
+	data := app.newTemplateData(r)
+	data.Post = *post
+	app.render(w, r, http.StatusOK, "post_view.html", data)
 }
