@@ -2,7 +2,7 @@
 {{define "main"}}
     <section>
         <hgroup style="text-align: center; margin-bottom: 2rem; align-items: flex-center;">
-            <h1>Check these posts out</h1>
+            <h1>My posts</h1>
         </hgroup>
 
         {{if .Posts}}
@@ -23,17 +23,14 @@
                             <img alt="blog" src="{{.FeaturedImage}}" style="width: 100%; height: auto;">
                         {{end}}
 
-                        {{if .PublishedAt}}
-                            <small style="color: #555;">
-                                Published on {{.PublishedAt.Format "Jan 2, 2006"}}
-                            </small>
-                        {{end}}
-
+			    <small>
+			      Last edit on {{.UpdatedAt.Format "Jan 2, 2006 15:04"}} &bull; {{.Status}}
+			      </small>
                     </article>
                 {{end}}
             </div>
         {{else}}
-            <p style="text-align: center;">No posts yet.</p>
+            <p style="text-align: center;">No posts yet. Go ahead and write something!</p>
         {{end}}
     </section>
 

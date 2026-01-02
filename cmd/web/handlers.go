@@ -14,11 +14,12 @@ import (
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	data := app.newTemplateData(r)
 	posts, err := app.posts.GetPublished(20)
 	if err != nil {
 		app.serverError(w, r, err)
+		return
 	}
+	data := app.newTemplateData(r)	
 	data.Posts = posts
 	app.render(w, r, http.StatusOK, "home.html", data)
 }
@@ -345,6 +346,11 @@ func (app *application) viewPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if post.Status == models.Draft && (!app.isAuthenticated(r) || post.AuthorID != app.getAuthenticatedUser(r).ID) {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return		
+	}
+
 	data := app.newTemplateData(r)
 	data.Post = *post
 	app.render(w, r, http.StatusOK, "post_view.html", data)
@@ -354,7 +360,7 @@ func (app *application) postCreateGet(w http.ResponseWriter, r *http.Request) {
 	user := app.getAuthenticatedUser(r)
 	data := app.newTemplateData(r)
 	data.User = *user
-	app.render(w, r, http.StatusOK, "post_create.html", data)	
+	app.render(w, r, http.StatusOK, "post_create.html", data)
 }
 
 func (app *application) postCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -363,12 +369,12 @@ func (app *application) postCreatePost(w http.ResponseWriter, r *http.Request) {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-	
+
 	title := r.PostForm.Get("title")
 	excerpt := r.PostForm.Get("excerpt")
 	content := r.PostForm.Get("content")
 	statusStr := r.PostForm.Get("status")
-	
+
 	if title == "" || content == "" || statusStr == "" {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -388,25 +394,25 @@ func (app *application) postCreatePost(w http.ResponseWriter, r *http.Request) {
 		published_at = &t
 	}
 
-        author := app.getAuthenticatedUser(r)
-	
+	author := app.getAuthenticatedUser(r)
+
 	slug := slug2.Make(title)
 	slug_cnt, err := app.posts.CountSlugs(slug)
-	slug = fmt.Sprintf("%s-%d", slug, slug_cnt + 1)
+	slug = fmt.Sprintf("%s-%d", slug, slug_cnt+1)
 
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
-	
+
 	post := &models.Post{
-		Title: title,
-		Slug: slug,
-		Content: content,
-		Excerpt: excerpt,
-		AuthorID: author.ID,
-		Status: status,
-		PublishedAt: published_at,
+		Title:         title,
+		Slug:          slug,
+		Content:       content,
+		Excerpt:       excerpt,
+		AuthorID:      author.ID,
+		Status:        status,
+		PublishedAt:   published_at,
 		FeaturedImage: nil,
 	}
 
@@ -417,6 +423,19 @@ func (app *application) postCreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("HX-Redirect", "/posts/view/" + slug)
+	w.Header().Set("HX-Redirect", "/posts/view/"+slug)
 	w.WriteHeader(http.StatusOK)
 }
+
+func (app *application) myPosts(w http.ResponseWriter, r *http.Request) {
+	posts, err := app.posts.GetByAuthorID(app.getAuthenticatedUser(r).ID, 20)
+	app.infoLog.Println(app.getAuthenticatedUser(r).ID)
+	if err != nil {
+		app.serverError(w,r,err)
+		return
+	}
+	data := app.newTemplateData(r)	
+	data.Posts = posts
+	app.render(w, r, http.StatusOK, "my_posts.html", data)	
+}
+
