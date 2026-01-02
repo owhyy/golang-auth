@@ -1,9 +1,9 @@
 package models
 
 import (
-	"time"
-	"errors"
 	"database/sql"
+	"errors"
+	"time"
 )
 
 type PostStatus string
@@ -134,4 +134,52 @@ func (m *PostModel) GetBySlug(slug string) (*Post, error) {
 	}
 
 	return &p, nil
+}
+
+func (m *PostModel) CountSlugs(slug string) (int, error) {
+	var count int
+	query := `
+SELECT COUNT(1) FROM posts WHERE slug = $1
+`
+
+	err := m.DB.QueryRow(query, slug).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	
+	return count, nil
+}
+
+func (m *PostModel) Create(p *Post) error {
+	query := `
+		INSERT INTO posts (
+			title,
+			slug,
+			content,
+			excerpt,
+			author_id,
+			status,
+			published_at,
+			featured_image
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`
+
+	_, err := m.DB.Exec(
+		query,
+		p.Title,
+		p.Slug,
+		p.Content,
+		p.Excerpt,
+		p.AuthorID,
+		p.Status,
+		p.PublishedAt,
+		p.FeaturedImage,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

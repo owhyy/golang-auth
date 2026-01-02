@@ -3,10 +3,13 @@ package main
 import (
 	_ "embed"
 	"errors"
+	"fmt"
 	"net/http"
 	"owhyy/simple-auth/internal/models"
 	"strings"
+	"time"
 
+	slug2 "github.com/gosimple/slug"
 	passwordvalidator "github.com/wagslane/go-password-validator"
 )
 
@@ -50,7 +53,7 @@ func (app *application) loginPost(w http.ResponseWriter, r *http.Request) {
 
 	err = r.ParseForm()
 	if err != nil {
-		app.serverError(w, r, err)
+		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -79,7 +82,6 @@ func (app *application) loginPost(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("HX-Redirect", "/profile")
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func (app *application) logout(w http.ResponseWriter, r *http.Request) {
@@ -346,4 +348,75 @@ func (app *application) viewPost(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	data.Post = *post
 	app.render(w, r, http.StatusOK, "post_view.html", data)
+}
+
+func (app *application) postCreateGet(w http.ResponseWriter, r *http.Request) {
+	user := app.getAuthenticatedUser(r)
+	data := app.newTemplateData(r)
+	data.User = *user
+	app.render(w, r, http.StatusOK, "post_create.html", data)	
+}
+
+func (app *application) postCreatePost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	
+	title := r.PostForm.Get("title")
+	excerpt := r.PostForm.Get("excerpt")
+	content := r.PostForm.Get("content")
+	statusStr := r.PostForm.Get("status")
+	
+	if title == "" || content == "" || statusStr == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	if excerpt == "" {
+		excerpt = content
+		if len(excerpt) > 150 {
+			excerpt = excerpt[:150]
+		}
+	}
+
+	var published_at *time.Time
+	status := models.PostStatus(statusStr)
+	if status == models.Published {
+		t := time.Now()
+		published_at = &t
+	}
+
+        author := app.getAuthenticatedUser(r)
+	
+	slug := slug2.Make(title)
+	slug_cnt, err := app.posts.CountSlugs(slug)
+	slug = fmt.Sprintf("%s-%d", slug, slug_cnt + 1)
+
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	
+	post := &models.Post{
+		Title: title,
+		Slug: slug,
+		Content: content,
+		Excerpt: excerpt,
+		AuthorID: author.ID,
+		Status: status,
+		PublishedAt: published_at,
+		FeaturedImage: nil,
+	}
+
+	err = app.posts.Create(post)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("HX-Redirect", "/posts/view/" + slug)
+	w.WriteHeader(http.StatusOK)
 }
