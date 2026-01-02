@@ -4,6 +4,12 @@
 <section style="margin-top: 2rem;">
   <hgroup style="text-align: center; margin-bottom: 2rem;">
     <h1>{{.Title}}</h1>
+    
+    <p>
+      <small>
+	by <a href="/posts/user/{{.AuthorUsername}}">{{.AuthorUsername }}</a>
+      </small>
+    </p>
 
     {{if .PublishedAt}}
     <p>

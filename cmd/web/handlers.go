@@ -172,7 +172,7 @@ func (app *application) signupPost(w http.ResponseWriter, r *http.Request) {
 	userId, err := app.users.Create(email, username, password)
 	if err != nil {
 		if errors.Is(err, models.ErrDuplicateEmail) {
-			fmt.Fprintf(w,`
+			fmt.Fprintf(w, `
             <label id="email-input" for="email" hx-swap-oob="true" x-data="{ error: true }">
                 Email
                 <input id="email" name="email" required type="email" :aria-invalid="error" value="%s" @input="error = false">
@@ -191,7 +191,6 @@ func (app *application) signupPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		app.errorLog.Println(err)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}

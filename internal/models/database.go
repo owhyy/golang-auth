@@ -88,8 +88,6 @@ func Populate(db *DB, userCount int, postCount int) error {
 	}
 	defer tx.Rollback()
 
-	userIDs := make([]int64, 0, userCount)
-
 	userQuery := `
 		INSERT INTO users (email, username, password_hash, email_verified)
 		VALUES %s
@@ -118,13 +116,9 @@ func Populate(db *DB, userCount int, postCount int) error {
 		return err
 	}
 
-	firstID, err := res.LastInsertId()
+	lastID, err := res.LastInsertId()
 	if err != nil {
 		return err
-	}
-
-	for i := range userCount {
-		userIDs = append(userIDs, firstID+int64(i))
 	}
 
 	batchSize := postCount / 10
@@ -159,7 +153,7 @@ func Populate(db *DB, userCount int, postCount int) error {
 				excerpt = excerpt[:150]
 			}
 
-			authorID := userIDs[gofakeit.Number(0, len(userIDs)-1)]
+			authorID := gofakeit.Number(1, int(lastID))
 
 			status := "published"
 			publishedAt := sql.NullTime{

@@ -16,17 +16,18 @@ const (
 )
 
 type Post struct {
-	ID            uint
-	Title         string
-	Slug          string
-	Content       string
-	Excerpt       string
-	AuthorID      uint
-	Status        PostStatus
-	PublishedAt   *time.Time
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	FeaturedImage *string
+	ID             uint
+	Title          string
+	Slug           string
+	Content        string
+	Excerpt        string
+	AuthorID       uint
+	AuthorUsername string      // not saved in db
+	Status         PostStatus
+	PublishedAt    *time.Time
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	FeaturedImage  *string
 }
 
 type PostModel struct {
@@ -93,18 +94,19 @@ func (m *PostModel) GetPublished(limit uint) ([]Post, error) {
 func (m *PostModel) GetBySlug(slug string) (*Post, error) {
 	query := `
 		SELECT
-			id,
-			title,
-			slug,
-			content,
-			excerpt,
-			author_id,
-			status,
-			published_at,
-			created_at,
-			updated_at,
-			featured_image
-		FROM posts
+			p.id,
+			p.title,
+			p.slug,
+			p.content,
+			p.excerpt,
+			p.author_id,
+                        u.username,
+			p.status,
+			p.published_at,
+			p.created_at,
+			p.updated_at,
+			p.featured_image
+		FROM posts p JOIN users u on p.author_id = u.id
 		WHERE slug = $1
 		LIMIT 1
 	`
@@ -118,6 +120,7 @@ func (m *PostModel) GetBySlug(slug string) (*Post, error) {
 		&p.Content,
 		&p.Excerpt,
 		&p.AuthorID,
+		&p.AuthorUsername,		
 		&p.Status,
 		&p.PublishedAt,
 		&p.CreatedAt,
@@ -192,7 +195,6 @@ func (m *PostModel) GetByAuthorID(authorID, limit uint) ([]Post, error) {
 	return posts, nil
 }
 
-
 func (m *PostModel) CountSlugs(slug string) (int, error) {
 	var count int
 	query := `
@@ -203,7 +205,7 @@ SELECT COUNT(1) FROM posts WHERE slug = $1 OR slug LIKE $2
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return count, nil
 }
 
