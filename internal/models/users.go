@@ -20,6 +20,7 @@ type User struct {
 	PasswordHash  string
 	EmailVerified bool
 	CreatedAt     string
+	IsAdmin       bool
 }
 
 type UserModel struct {

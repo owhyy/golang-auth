@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     email_verified INTEGER NOT NULL DEFAULT 0,
+    is_admin INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -183,4 +184,23 @@ func Populate(db *DB, userCount int, postCount int) error {
 	}
 
 	return tx.Commit()
+}
+
+
+func CreateAdmin(db *DB, username, email, password string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(
+		"INSERT INTO users (username, email, password_hash, is_admin, email_verified) VALUES ($1, $2, $3, 1, 1)",
+		username, email, hashedPassword,
+	)
+
+	if err != nil {
+		return err
+	}
+	
+	return nil
 }
