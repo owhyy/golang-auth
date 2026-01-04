@@ -19,12 +19,28 @@ import (
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_]{3,20}$`)
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	posts, err := app.posts.GetPublished(20)
+	pagination, err := app.newPagination(r)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
+	total, err := app.posts.CountPublished()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	pagination.TotalPages = int(total) / pagination.PerPage
+	
+	posts, err := app.posts.GetPublished(pagination.PerPage, pagination.CurrentPage)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
 	data := app.newTemplateData(r)
+
+	
+	data.Pagination = *pagination
 	data.Posts = posts
 	app.render(w, r, http.StatusOK, "home.html", data)
 }

@@ -30,12 +30,21 @@ func newTemplateCache() (map[string]*template.Template, error) {
 	return cache, nil
 }
 
+type paginationData struct {
+	CurrentPage int
+	PerPage     int
+	TotalPages  int
+	Prev        int
+	Next        int
+}
+
 type templateData struct {
 	User            models.User
 	Error           string
 	Token           string
 	IsAuthenticated bool
-	CurrentPage     string
+	BaseURL         string
 	Posts           []models.Post
 	Post            models.Post
+	Pagination      paginationData
 }

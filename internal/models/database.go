@@ -70,7 +70,10 @@ CREATE INDEX IF NOT EXISTS idx_tokens_id ON tokens(id);
 CREATE INDEX IF NOT EXISTS idx_tokens_token ON tokens(token);
 CREATE INDEX IF NOT EXISTS idx_tokens_purpose ON tokens(purpose);
 CREATE INDEX IF NOT EXISTS idx_posts_slug ON posts(slug);
-CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);    
+CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
+CREATE INDEX IF NOT EXISTS idx_posts_id ON posts(id);
+
 `
 	_, err = db.Exec(createTablesSQL)
 	if err != nil {

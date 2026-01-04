@@ -22,7 +22,7 @@ type Post struct {
 	Content        string
 	Excerpt        string
 	AuthorID       uint
-	AuthorUsername string      // not saved in db
+	AuthorUsername string // not saved in db
 	Status         PostStatus
 	PublishedAt    *time.Time
 	CreatedAt      time.Time
@@ -34,7 +34,7 @@ type PostModel struct {
 	DB *DB
 }
 
-func (m *PostModel) GetPublished(limit uint) ([]Post, error) {
+func (m *PostModel) GetPublished(perPage, currentPage int) ([]Post, error) {
 	query := `
 		SELECT
 			id,
@@ -52,9 +52,10 @@ func (m *PostModel) GetPublished(limit uint) ([]Post, error) {
 		WHERE status = 'published'
 		ORDER BY published_at DESC
 		LIMIT $1
+                OFFSET $2
 	`
 
-	rows, err := m.DB.Query(query, limit)
+	rows, err := m.DB.Query(query, perPage, perPage*currentPage)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +121,7 @@ func (m *PostModel) GetBySlug(slug string) (*Post, error) {
 		&p.Content,
 		&p.Excerpt,
 		&p.AuthorID,
-		&p.AuthorUsername,		
+		&p.AuthorUsername,
 		&p.Status,
 		&p.PublishedAt,
 		&p.CreatedAt,
@@ -241,4 +242,16 @@ func (m *PostModel) Create(p *Post) error {
 	}
 
 	return nil
+}
+
+func (m *PostModel) CountPublished() (uint, error) {
+	var count uint
+	query := `SELECT COUNT(1) FROM posts WHERE status = $1`
+
+	err := m.DB.QueryRow(query, Published).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
