@@ -92,17 +92,18 @@ func (app *application) newPagination(r *http.Request) (*paginationData, error) 
 	}
 	data.CurrentPage = curPage
 
-	perPage := 20
+	// TODO: implement this on frontend
+	perPage := 30
 	if s := r.URL.Query().Get("per_page"); s != "" {
 		perPage, err = strconv.Atoi(s)
 		if err != nil {
 			return nil, err
 		}
 	}
-	if perPage == 20 || perPage == 40 || perPage == 60 {
+	if perPage == 30 || perPage == 60 || perPage == 90 {
 		data.PerPage = perPage
 	} else {
-		data.PerPage = 20
+		data.PerPage = 30
 	}
 
 	data.Prev = curPage - 1
