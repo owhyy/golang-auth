@@ -489,7 +489,6 @@ func (app *application) myPosts(w http.ResponseWriter, r *http.Request) {
 	}
 	user := app.getAuthenticatedUser(r)
 	total, err := app.posts.CountForUser(user.ID)
-	app.infoLog.Println(total)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
@@ -498,7 +497,6 @@ func (app *application) myPosts(w http.ResponseWriter, r *http.Request) {
 		total = pagination.PerPage
 	}
 	pagination.TotalPages = total / pagination.PerPage
-	app.infoLog.Println(pagination)
 
 	posts, err := app.posts.GetByAuthorID(user.ID, pagination.PerPage, pagination.CurrentPage)
 	if err != nil {
