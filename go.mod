@@ -3,6 +3,7 @@ module owhyy/simple-auth
 go 1.25.4
 
 require (
+	github.com/a-h/templ v0.3.977 // indirect
 	github.com/brianvoe/gofakeit/v7 v7.14.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.4.0 // indirect

@@ -1,0 +1,17 @@
+package templates
+
+import "owhyy/simple-auth/internal/models"
+
+templ Profile(user models.User) {
+	<section>
+		<hgroup style="text-align: center; align-items: flex-center;">
+			<h1 style="margin-bottom: 1rem;">Hello, <em>{ user.Username }</em></h1>
+			if user.EmailVerified {
+				<p>Your email is verified</p>
+			} else {
+				<p>Your email is <strong>not verified</strong>. Check your email for instructions on how to do it</p>
+				<p>Didn't receive it? <a style="cursor: pointer" role="link" hx-post="/resend-verify-email" hx-disabled-elt="this">Resend verification email</a></p>
+			}
+		</hgroup>
+	</section>
+}

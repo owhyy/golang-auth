@@ -1,0 +1,28 @@
+package templates
+
+import (
+	"fmt"
+	"owhyy/simple-auth/internal/types"
+)
+
+templ Paginator(pagination types.PaginationData) {
+	if pagination.CurrentPage > 0 {
+		<nav aria-label="Pagination" style="justify-content: center;">
+			<ul>
+				if pagination.CurrentPage > 1 {
+					<li>
+						<a href={ templ.SafeURL("?page=" + fmt.Sprintf("%d", pagination.Prev)) }>Previous</a>
+					</li>
+				}
+				<li>
+					<strong>Page { fmt.Sprintf("%d", pagination.CurrentPage) }</strong> out of { fmt.Sprintf("%d", pagination.TotalPages) }
+				</li>
+				if pagination.CurrentPage < pagination.TotalPages {
+					<li>
+						<a href={ templ.SafeURL("?page=" + fmt.Sprintf("%d", pagination.Next)) }>Next</a>
+					</li>
+				}
+			</ul>
+		</nav>
+	}
+}
