@@ -48,18 +48,24 @@ func Profile(user models.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if user.EmailVerified {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p>Your email is verified</p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<p>Your email is <strong>not verified</strong>. Check your email for instructions on how to do it</p><p>Didn't receive it? <a style=\"cursor: pointer\" role=\"link\" hx-post=\"/resend-verify-email\" hx-disabled-elt=\"this\">Resend verification email</a></p>")
+		if user.IsAdmin {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p><strong style=\"color: var(--pico-primary);\">👑 Administrator</strong></p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</hgroup></section>")
+		if user.EmailVerified {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<p>Your email is verified</p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<p>Your email is <strong>not verified</strong>. Check your email for instructions on how to do it</p><p>Didn't receive it? <a style=\"cursor: pointer\" role=\"link\" hx-post=\"/resend-verify-email\" hx-disabled-elt=\"this\">Resend verification email</a></p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</hgroup></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
