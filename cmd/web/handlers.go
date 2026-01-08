@@ -574,6 +574,45 @@ func (app *application) updatePost(w http.ResponseWriter, r *http.Request) {
 	templates.PostView(*updatedPost, true, user).Render(r.Context(), w)
 }
 
+func (app *application) deletePost(w http.ResponseWriter, r *http.Request) {
+	user := app.getAuthenticatedUser(r)
+	if user == nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	idStr := r.PathValue("id")
+	postID, err := strconv.Atoi(idStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	post, err := app.posts.GetByID(uint(postID))
+	if err != nil {
+		if errors.Is(err, models.ErrRecordNotFound) {
+			app.clientError(w, http.StatusNotFound)
+			return
+		}
+		app.serverError(w, r, err)
+		return
+	}
+
+	if post.AuthorID != user.ID {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
+	err = app.posts.Delete(uint(postID))
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	w.Header().Set("HX-Redirect", "/")
+	w.WriteHeader(http.StatusOK)
+}
+
 func (app *application) postCreateGet(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "New Post", templates.PostCreate())
 }

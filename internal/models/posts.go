@@ -337,3 +337,10 @@ func (m *PostModel) Update(id uint, title, content string) error {
 	_, err := m.DB.Exec(query, title, content, id)
 	return err
 }
+
+func (m *PostModel) Delete(id uint) error {
+	query := `DELETE FROM posts WHERE id = $1`
+
+	_, err := m.DB.Exec(query, id)
+	return err
+}

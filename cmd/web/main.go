@@ -47,13 +47,13 @@ func main() {
 	store.Options = &sessions.Options{SameSite: http.SameSiteLaxMode, Secure: false}
 
 	app := &application{
-		config:       config,
-		errorLog:     errorLog,
-		infoLog:      infoLog,
-		users:        &models.UserModel{DB: db},
-		tokens:       &models.TokenModel{DB: db},
-		posts:        &models.PostModel{DB: db},
-		cookieStore:   store,
+		config:      config,
+		errorLog:    errorLog,
+		infoLog:     infoLog,
+		users:       &models.UserModel{DB: db},
+		tokens:      &models.TokenModel{DB: db},
+		posts:       &models.PostModel{DB: db},
+		cookieStore: store,
 		emailService: &services.EmailService{
 			Host:     config.SMTPHost,
 			Port:     config.SMTPPort,
@@ -84,9 +84,10 @@ func main() {
 	mux.HandleFunc("POST /posts/{id}/publish", app.requireAuthentication(app.publishPost))
 	mux.HandleFunc("POST /posts/{id}/unpublish", app.requireAuthentication(app.unpublishPost))
 	mux.HandleFunc("PATCH /posts/{id}/update", app.requireAuthentication(app.updatePost))
+	mux.HandleFunc("DELETE /posts/{id}", app.requireAuthentication(app.deletePost))
 	mux.HandleFunc("GET /posts/my", app.requireAuthentication(app.myPosts))
 	mux.HandleFunc("GET /posts/create", app.requireAuthentication(app.postCreateGet))
-	mux.HandleFunc("POST /posts/create", app.requireAuthentication(app.postCreatePost))		
+	mux.HandleFunc("POST /posts/create", app.requireAuthentication(app.postCreatePost))
 
 	srv := &http.Server{Addr: "0.0.0.0:8080", ErrorLog: errorLog, Handler: mux}
 	infoLog.Println("Starting server on 0.0.0.0:8080")
