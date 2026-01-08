@@ -13,7 +13,7 @@ import (
 func (app *application) render(w http.ResponseWriter, r *http.Request, status int, title string, main templ.Component) {
 	w.WriteHeader(status)
 
-	navComponent := templates.Nav(r.URL.Path, app.isAuthenticated(r))
+	navComponent := templates.Nav(app.isAuthenticated(r))
 	templates.Base(title, navComponent, main).Render(r.Context(), w)
 }
 
