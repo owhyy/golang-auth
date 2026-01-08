@@ -1,29 +1,20 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"owhyy/simple-auth/internal/models"
+	"owhyy/simple-auth/internal/types"
+	"owhyy/simple-auth/ui/templates"
 	"strconv"
-	"strings"
+
+	"github.com/a-h/templ"
 )
 
-func (app *application) render(w http.ResponseWriter, r *http.Request, status int, page string, data templateData) {
-	ts, ok := app.templateCache[page]
-	if !ok {
-		err := fmt.Errorf("the template %s does not exist", page)
-		app.serverError(w, r, err)
-		return
-	}
+func (app *application) render(w http.ResponseWriter, r *http.Request, status int, title string, main templ.Component) {
 	w.WriteHeader(status)
 
-	prefix, _, _ := strings.Cut(page, ".")
-	data.BaseURL = prefix
-
-	err := ts.ExecuteTemplate(w, "base", data)
-	if err != nil {
-		app.serverError(w, r, err)
-	}
+	navComponent := templates.Nav(r.URL.Path, app.isAuthenticated(r))
+	templates.Base(title, navComponent, main).Render(r.Context(), w)
 }
 
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
@@ -72,16 +63,10 @@ func (app *application) renderHTMXError(w http.ResponseWriter, msg string) {
 	w.Write([]byte(`<p class="pico-color-red-600">` + msg + "</p>"))
 }
 
-func (app *application) newTemplateData(r *http.Request) templateData {
-	return templateData{
-		IsAuthenticated: app.isAuthenticated(r),
-	}
-}
-
-func (app *application) newPagination(r *http.Request) (*paginationData, error) {
+func (app *application) newPagination(r *http.Request) (*types.PaginationData, error) {
 	var err error
 
-	data := &paginationData{}
+	data := &types.PaginationData{}
 
 	curPage := 1
 	if s := r.URL.Query().Get("page"); s != "" {

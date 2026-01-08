@@ -1,7 +1,6 @@
 package main
 
 import (
-	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -14,15 +13,14 @@ import (
 )
 
 type application struct {
-	config        *internal.Config
-	errorLog      *log.Logger
-	infoLog       *log.Logger
-	users         *models.UserModel
-	tokens        *models.TokenModel
-	posts         *models.PostModel
-	cookieStore   *sessions.CookieStore
-	emailService  *services.EmailService
-	templateCache map[string]*template.Template
+	config       *internal.Config
+	errorLog     *log.Logger
+	infoLog      *log.Logger
+	users        *models.UserModel
+	tokens       *models.TokenModel
+	posts        *models.PostModel
+	cookieStore  *sessions.CookieStore
+	emailService *services.EmailService
 }
 
 func main() {
@@ -30,11 +28,6 @@ func main() {
 	errorLog := log.New(os.Stderr, "ERROR\t", log.LstdFlags|log.Lshortfile)
 
 	config, err := internal.LoadConfig()
-	if err != nil {
-		errorLog.Fatal(err.Error())
-	}
-
-	templateCache, err := newTemplateCache()
 	if err != nil {
 		errorLog.Fatal(err.Error())
 	}
@@ -54,13 +47,12 @@ func main() {
 	store.Options = &sessions.Options{SameSite: http.SameSiteLaxMode, Secure: false}
 
 	app := &application{
-		config:        config,
-		templateCache: templateCache,
-		errorLog:      errorLog,
-		infoLog:       infoLog,
-		users:         &models.UserModel{DB: db},
-		tokens:        &models.TokenModel{DB: db},
-		posts:         &models.PostModel{DB: db},
+		config:       config,
+		errorLog:     errorLog,
+		infoLog:      infoLog,
+		users:        &models.UserModel{DB: db},
+		tokens:       &models.TokenModel{DB: db},
+		posts:        &models.PostModel{DB: db},
 		cookieStore:   store,
 		emailService: &services.EmailService{
 			Host:     config.SMTPHost,

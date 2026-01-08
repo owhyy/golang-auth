@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/mail"
 	"owhyy/simple-auth/internal/models"
+	"owhyy/simple-auth/ui/templates"
 	"regexp"
 	"strings"
 	"time"
@@ -40,18 +41,12 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := app.newTemplateData(r)
-
-	data.Pagination = *pagination
-	data.Posts = posts
-	app.render(w, r, http.StatusOK, "home.html", data)
+	app.render(w, r, http.StatusOK, "Home", templates.Home(posts, *pagination))
 }
 
 func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 	user := app.getAuthenticatedUser(r)
-	data := app.newTemplateData(r)
-	data.User = *user
-	app.render(w, r, http.StatusOK, "profile.html", data)
+	app.render(w, r, http.StatusOK, "Profile", templates.Profile(*user))
 }
 
 func (app *application) loginGet(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +55,7 @@ func (app *application) loginGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.render(w, r, http.StatusOK, "login.html", app.newTemplateData(r))
+	app.render(w, r, http.StatusOK, "Login", templates.Login())
 }
 
 func (app *application) loginPost(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +117,7 @@ func (app *application) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) signupGet(w http.ResponseWriter, r *http.Request) {
-	app.render(w, r, http.StatusOK, "signup.html", app.newTemplateData(r))
+	app.render(w, r, http.StatusOK, "Sign up", templates.Signup())
 }
 
 func (app *application) signupPost(w http.ResponseWriter, r *http.Request) {
@@ -236,7 +231,7 @@ func (app *application) requestPasswdResetGet(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	app.render(w, r, http.StatusOK, "forgot_password.html", templateData{})
+	app.render(w, r, http.StatusOK, "Forgot password", templates.ForgotPassword())
 }
 
 func (app *application) requestPasswdResetPost(w http.ResponseWriter, r *http.Request) {
@@ -287,11 +282,10 @@ func (app *application) requestPasswdResetPost(w http.ResponseWriter, r *http.Re
 }
 
 func (app *application) resetPasswordGet(w http.ResponseWriter, r *http.Request) {
-	data := app.newTemplateData(r)
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		data.Error = "Verification link is invalid. Try requesting a new password reset"
-		app.render(w, r, http.StatusBadRequest, "password_reset.html", data)
+		errMsg := "Verification link is invalid. Try requesting a new password reset"
+		app.render(w, r, http.StatusBadRequest, "Reset your password", templates.PasswordReset(errMsg, ""))
 		return
 	}
 
@@ -301,13 +295,12 @@ func (app *application) resetPasswordGet(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if !exists {
-		data.Error = "Token has already been used or is expired. Try requesting a new password reset"
-		app.render(w, r, http.StatusBadRequest, "password_reset.html", data)
+		errMsg := "Token has already been used or is expired. Try requesting a new password reset"
+		app.render(w, r, http.StatusBadRequest, "Reset your password", templates.PasswordReset(errMsg, ""))
 		return
 	}
 
-	data.Token = token
-	app.render(w, r, http.StatusOK, "password_reset.html", data)
+	app.render(w, r, http.StatusOK, "Reset your password", templates.PasswordReset("", token))
 }
 
 func (app *application) resetPasswordPost(w http.ResponseWriter, r *http.Request) {
@@ -354,12 +347,10 @@ func (app *application) resetPasswordPost(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) verify(w http.ResponseWriter, r *http.Request) {
-	data := app.newTemplateData(r)
-
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		data.Error = "Verification link is invalid. Try requesting a new verification link after logging in"
-		app.render(w, r, http.StatusBadRequest, "verify.html", data)
+		errMsg := "Verification link is invalid. Try requesting a new verification link after logging in"
+		app.render(w, r, http.StatusBadRequest, "Verify your email", templates.Verify(errMsg))
 		return
 	}
 
@@ -367,22 +358,22 @@ func (app *application) verify(w http.ResponseWriter, r *http.Request) {
 	userID, err := app.tokens.Consume(models.EmailVerifyPurpose, token)
 	if err != nil {
 		app.errorLog.Println(err.Error())
-		data.Error = "Token has already been used or is expired. Please request a new verification link after logging in"
-		app.render(w, r, http.StatusBadRequest, "verify.html", data)
+		errMsg := "Token has already been used or is expired. Please request a new verification link after logging in"
+		app.render(w, r, http.StatusBadRequest, "Verify your email", templates.Verify(errMsg))
 		return
 	}
 
 	err = app.users.VerifyEmailByID(userID)
 	if err != nil {
 		app.errorLog.Println(err.Error())
-		data.Error = "Something went wrong. Please try again later"
+		errMsg := "Something went wrong. Please try again later"
 		app.errorLog.Println("verify: failed to verify user email:", err)
-		app.render(w, r, http.StatusBadRequest, "verify.html", data)
+		app.render(w, r, http.StatusBadRequest, "Verify your email", templates.Verify(errMsg))
 		return
 	}
 
 	app.infoLog.Printf("Email verified for user User %d", userID)
-	app.render(w, r, http.StatusOK, "verify.html", data)
+	app.render(w, r, http.StatusOK, "Verify your email", templates.Verify(""))
 
 	// TODO: check what happens in this case
 	email, err := app.users.GetEmailByID(userID)
@@ -419,16 +410,11 @@ func (app *application) viewPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := app.newTemplateData(r)
-	data.Post = *post
-	app.render(w, r, http.StatusOK, "post_view.html", data)
+	app.render(w, r, http.StatusOK, post.Title, templates.PostView(*post))
 }
 
 func (app *application) postCreateGet(w http.ResponseWriter, r *http.Request) {
-	user := app.getAuthenticatedUser(r)
-	data := app.newTemplateData(r)
-	data.User = *user
-	app.render(w, r, http.StatusOK, "post_create.html", data)
+	app.render(w, r, http.StatusOK, "New Post", templates.PostCreate())
 }
 
 func (app *application) postCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -508,19 +494,16 @@ func (app *application) myPosts(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, r, err)
 		return
 	}
-        if total < pagination.PerPage {
+	if total < pagination.PerPage {
 		total = pagination.PerPage
 	}
 	pagination.TotalPages = total / pagination.PerPage
-	app.infoLog.Println(pagination)	
+	app.infoLog.Println(pagination)
 
 	posts, err := app.posts.GetByAuthorID(user.ID, pagination.PerPage, pagination.CurrentPage)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
-	data := app.newTemplateData(r)
-	data.Posts = posts
-	data.Pagination = *pagination
-	app.render(w, r, http.StatusOK, "my_posts.html", data)
+	app.render(w, r, http.StatusOK, "My posts", templates.MyPosts(posts, *pagination))
 }
