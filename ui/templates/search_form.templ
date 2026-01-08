@@ -1,0 +1,19 @@
+package templates
+
+templ SearchForm(searchQuery string, action string) {
+	<div style="display: flex; justify-content: center; align-items: center; margin-bottom: 2rem;">
+		<form style="max-width: 600px; width: 100%;" method="GET" role="search" action={ action }>
+			<input type="search" name="search" placeholder="Search by title..." value={ searchQuery }
+				aria-label="Search posts by title" />
+			<input type="submit" value="Search" />
+			if searchQuery != "" {
+				<a href={ action } role="button" class="secondary">Clear</a>
+			}
+		</form>
+	</div>
+	if searchQuery != "" {
+		<p style="text-align: center; margin-bottom: 1.5rem; color: var(--pico-muted-color);">
+			Search results for: <strong>"{ searchQuery }"</strong>
+		</p>
+	}
+}
