@@ -39,11 +39,6 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, r, err)
 			return
 		}
-		if total < pagination.PerPage {
-			total = pagination.PerPage
-		}
-		pagination.TotalPages = total / pagination.PerPage
-
 		posts, err = app.posts.SearchByTitle(searchQuery, pagination.PerPage, pagination.CurrentPage)
 		if err != nil {
 			app.serverError(w, r, err)
@@ -55,11 +50,6 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, r, err)
 			return
 		}
-		if total < pagination.PerPage {
-			total = pagination.PerPage
-		}
-		pagination.TotalPages = total / pagination.PerPage
-
 		posts, err = app.posts.GetPublished(pagination.PerPage, pagination.CurrentPage)
 		if err != nil {
 			app.serverError(w, r, err)
@@ -67,11 +57,20 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if total < pagination.PerPage {
+		total = pagination.PerPage
+	}
+	pagination.TotalPages = total / pagination.PerPage
+
 	app.render(w, r, http.StatusOK, "Home", templates.Home(posts, *pagination, searchQuery))
 }
 
 func (app *application) profile(w http.ResponseWriter, r *http.Request) {
 	user := app.getAuthenticatedUser(r)
+	if user == nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
 	app.render(w, r, http.StatusOK, "Profile", templates.Profile(*user))
 }
 
@@ -104,6 +103,11 @@ func (app *application) loginPost(w http.ResponseWriter, r *http.Request) {
 
 	email := r.PostForm.Get("email")
 	password := r.PostForm.Get("password")
+
+	if email == "" || password == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
 
 	id, err := app.users.Authenticate(email, password)
 	if err != nil {
@@ -158,12 +162,7 @@ func (app *application) signupPost(w http.ResponseWriter, r *http.Request) {
 	password := r.PostForm.Get("password")
 	confirmPassword := r.PostForm.Get("confirm_password")
 
-	if username == "" || email == "" || password == "" {
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	if !usernameRegex.MatchString(username) {
+	if username == "" || email == "" || password == "" || confirmPassword == "" || !usernameRegex.MatchString(username) {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
@@ -268,8 +267,10 @@ func (app *application) requestPasswdResetPost(w http.ResponseWriter, r *http.Re
 	}
 
 	email := r.PostForm.Get("email")
-	app.infoLog.Println(email)
-	app.infoLog.Println(r.PostForm)
+	if email == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
 	user, err := app.users.GetByEmail(email)
 	w.Write([]byte(`
 	<hgroup>
@@ -279,11 +280,11 @@ func (app *application) requestPasswdResetPost(w http.ResponseWriter, r *http.Re
 		<a class="primary" href="/" role="button">Go back</a>
 `))
 
+	// don't display these errors to the user
 	if err != nil {
 		app.errorLog.Println(err.Error())
 		return
 	}
-
 	canRequestReset, err := app.users.CanCreatePasswordRequest(user.ID)
 	if err != nil {
 		app.errorLog.Println(err.Error())
@@ -293,13 +294,11 @@ func (app *application) requestPasswdResetPost(w http.ResponseWriter, r *http.Re
 		app.errorLog.Println("Too many password reset requests for " + email)
 		return
 	}
-
 	token, err := app.tokens.CreatePasswordResetToken(user.ID)
 	if err != nil {
 		app.errorLog.Println(err.Error())
 		return
 	}
-
 	err = app.emailService.SendResetPasswordEmail(user.Email, app.config.BaseURL, token)
 	if err != nil {
 		app.errorLog.Println(err.Error())
@@ -433,7 +432,7 @@ func (app *application) viewPost(w http.ResponseWriter, r *http.Request) {
 
 	user := app.getAuthenticatedUser(r)
 	if post.Status == models.Draft && (!app.isAuthenticated(r) || user == nil || (post.AuthorID != user.ID && !user.IsAdmin)) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		app.clientError(w, http.StatusForbidden)
 		return
 	}
 
@@ -808,12 +807,11 @@ func (app *application) postCreatePost(w http.ResponseWriter, r *http.Request) {
 
 	slug := slug2.Make(title)
 	slug_cnt, err := app.posts.CountSlugs(slug)
-	slug = fmt.Sprintf("%s-%d", slug, slug_cnt+1)
-
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
+	slug = fmt.Sprintf("%s-%d", slug, slug_cnt+1)
 
 	post := &models.Post{
 		Title:         title,
@@ -828,8 +826,7 @@ func (app *application) postCreatePost(w http.ResponseWriter, r *http.Request) {
 
 	err = app.posts.Create(post)
 	if err != nil {
-		app.errorLog.Println(err)
-		app.clientError(w, http.StatusBadRequest)
+		app.serverError(w, r, err)
 		return
 	}
 
@@ -843,7 +840,13 @@ func (app *application) myPosts(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, r, err)
 		return
 	}
+
 	user := app.getAuthenticatedUser(r)
+	if user == nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
 	total, err := app.posts.CountForUser(user.ID)
 	if err != nil {
 		app.serverError(w, r, err)

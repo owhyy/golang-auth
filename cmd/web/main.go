@@ -67,10 +67,6 @@ func main() {
 
 	fileServer := http.FileServerFS(ui.Files)
 	mux.Handle("GET /static/", fileServer)
-
-	mux.HandleFunc("GET /uploads/", func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-	})
 	mux.HandleFunc("GET /uploads/{filename}", app.serveUpload)
 
 	mux.HandleFunc("GET /", app.home)
@@ -91,8 +87,8 @@ func main() {
 	mux.HandleFunc("POST /posts/{id}/unpublish", app.requireAuthentication(app.unpublishPost))
 	mux.HandleFunc("PATCH /posts/{id}/update", app.requireAuthentication(app.updatePost))
 	mux.HandleFunc("PATCH /posts/{id}/update-image", app.requireAuthentication(app.updatePostImage))
-	mux.HandleFunc("DELETE /posts/{id}/image", app.requireAuthentication(app.deletePostImage))
-	mux.HandleFunc("DELETE /posts/{id}", app.requireAuthentication(app.deletePost))
+	mux.HandleFunc("DELETE /posts/{id}/delete-image", app.requireAuthentication(app.deletePostImage))
+	mux.HandleFunc("DELETE /posts/{id}/delete", app.requireAuthentication(app.deletePost))
 	mux.HandleFunc("GET /posts/my", app.requireAuthentication(app.myPosts))
 	mux.HandleFunc("GET /posts/create", app.requireAuthentication(app.postCreateGet))
 	mux.HandleFunc("POST /posts/create", app.requireAuthentication(app.postCreatePost))
