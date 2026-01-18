@@ -865,6 +865,32 @@ func (app *application) myPosts(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "My posts", templates.MyPosts(posts, *pagination))
 }
 
+func (app *application) adminUsers(w http.ResponseWriter, r *http.Request) {
+	pagination, err := app.newPagination(r)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	total, err := app.users.Count()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	if total < pagination.PerPage {
+		total = pagination.PerPage
+	}
+	pagination.TotalPages = total / pagination.PerPage
+
+	users, err := app.users.GetAll(pagination.PerPage, pagination.CurrentPage)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.render(w, r, http.StatusOK, "Manage Users", templates.AdminUsers(users, *pagination, app.getAuthenticatedUser(r).ID))
+}
+
 func (app *application) userPosts(w http.ResponseWriter, r *http.Request) {
 	username := r.PathValue("username")
 	if username == "" {
@@ -905,6 +931,64 @@ func (app *application) userPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.render(w, r, http.StatusOK, fmt.Sprintf("Posts by %s", username), templates.UserPosts(posts, *pagination, username))
+}
+
+func (app *application) deleteUser(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	if uint(userID) == app.getAuthenticatedUser(r).ID {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
+	userToDelete, err := app.users.GetByID(uint(userID))
+	if err != nil {
+		if errors.Is(err, models.ErrRecordNotFound) {
+			app.clientError(w, http.StatusNotFound)
+			return
+		}
+		app.serverError(w, r, err)
+		return
+	}
+
+	if userToDelete.IsAdmin {
+		app.clientError(w, http.StatusForbidden)
+		return
+	}
+
+	posts, err := app.posts.GetByAuthorID(uint(userID), 10000, 1)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	for _, post := range posts {
+		if post.FeaturedImage != nil {
+			imagePath := strings.TrimPrefix(*post.FeaturedImage, "/uploads/")
+			if imagePath != "" && imagePath != *post.FeaturedImage {
+				filePath := filepath.Join("uploads", imagePath)
+				if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
+					app.errorLog.Printf("Failed to delete image file %s: %v", filePath, err)
+				}
+			}
+		}
+	}
+
+	err = app.users.Delete(uint(userID))
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.infoLog.Printf("User %d deleted", userID)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(""))
 }
 
 func (app *application) serveUpload(w http.ResponseWriter, r *http.Request) {

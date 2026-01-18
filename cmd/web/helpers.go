@@ -20,7 +20,9 @@ import (
 func (app *application) render(w http.ResponseWriter, r *http.Request, status int, title string, main templ.Component) {
 	w.WriteHeader(status)
 
-	navComponent := templates.Nav(app.isAuthenticated(r))
+	user := app.getAuthenticatedUser(r)
+	isAdmin := user != nil && user.IsAdmin
+	navComponent := templates.Nav(app.isAuthenticated(r), isAdmin)
 	templates.Base(title, navComponent, main).Render(r.Context(), w)
 }
 

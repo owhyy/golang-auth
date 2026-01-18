@@ -92,6 +92,8 @@ func main() {
 	mux.HandleFunc("GET /posts/my", app.requireAuthentication(app.myPosts))
 	mux.HandleFunc("GET /posts/create", app.requireAuthentication(app.postCreateGet))
 	mux.HandleFunc("POST /posts/create", app.requireAuthentication(app.postCreatePost))
+	mux.HandleFunc("GET /admin/users", app.requireAdmin(app.adminUsers))
+	mux.HandleFunc("DELETE /users/{id}/delete", app.requireAdmin(app.deleteUser))
 
 	srv := &http.Server{Addr: "0.0.0.0:8080", ErrorLog: errorLog, Handler: mux}
 	infoLog.Println("Starting server on 0.0.0.0:8080")

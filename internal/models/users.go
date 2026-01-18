@@ -173,3 +173,54 @@ func (m *UserModel) CanCreatePasswordRequest(id uint) (bool, error) {
 	)
 	return count < 4, err
 }
+
+func (m *UserModel) Delete(id uint) error {
+	query := `DELETE FROM users WHERE id = ?`
+	_, err := m.DB.Exec(query, id)
+	return err
+}
+
+func (m *UserModel) GetAll(perPage, currentPage int) ([]User, error) {
+	query := `
+		SELECT id, email, username, email_verified, is_admin, created_at
+		FROM users
+		ORDER BY created_at DESC
+		LIMIT ?
+		OFFSET ?
+	`
+
+	rows, err := m.DB.Query(query, perPage, (currentPage-1)*perPage)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+
+	for rows.Next() {
+		var u User
+		err := rows.Scan(
+			&u.ID,
+			&u.Email,
+			&u.Username,
+			&u.EmailVerified,
+			&u.IsAdmin,
+			&u.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (m *UserModel) Count() (int, error) {
+	var count int
+	err := m.DB.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
+	return count, err
+}

@@ -8,7 +8,7 @@ package templates
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Nav(isAuthenticated bool) templ.Component {
+func Nav(isAuthenticated bool, isAdmin bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -29,22 +29,32 @@ func Nav(isAuthenticated bool) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav x-data=\"{ currentPath: window.location.pathname }\" x-init=\"currentPath = window.location.pathname\"><ul><li><strong>Funky & Goofy Blog</strong></li></ul><ul><li><a :class=\"currentPath === '/' || currentPath === '/home' ? 'outline' : 'secondary'\" href=\"/home\">Home</a></li>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<nav x-data=\"{ currentPath: window.location.pathname }\"><ul><li><strong>Funky & Goofy Blog</strong></li></ul><ul><li><a :class=\"currentPath === '/' || currentPath === '/home' ? 'outline' : 'secondary'\" href=\"/home\">Home</a></li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if isAuthenticated {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<li><a :class=\"currentPath === '/posts/create' ? 'outline' : 'secondary'\" href=\"/posts/create\">Create a post</a></li><li><a :class=\"currentPath === '/posts/my' ? 'outline' : 'secondary'\" href=\"/posts/my\">My posts</a></li><li><a :class=\"currentPath === '/profile' ? 'outline' : 'secondary'\" href=\"/profile\">My profile</a></li><li><a :class=\"currentPath === '/logout' ? 'outline' : 'secondary'\" href=\"/logout\" hx-post=\"/logout\">Log out</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<li><a :class=\"currentPath === '/posts/create' ? 'outline' : 'secondary'\" href=\"/posts/create\">Create a post</a></li><li><a :class=\"currentPath === '/posts/my' ? 'outline' : 'secondary'\" href=\"/posts/my\">My posts</a></li><li><a :class=\"currentPath === '/profile' ? 'outline' : 'secondary'\" href=\"/profile\">My profile</a></li>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if isAdmin {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<li><a :class=\"currentPath === '/admin/users' ? 'outline' : 'secondary'\" href=\"/admin/users\">Manage Users</a></li>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " <li><a :class=\"currentPath === '/logout' ? 'outline' : 'secondary'\" href=\"/logout\" hx-post=\"/logout\">Log out</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<li><a :class=\"currentPath === '/login' ? 'outline' : 'secondary'\" href=\"/login\">Log in</a></li><li><a :class=\"currentPath === '/signup' ? 'outline' : 'secondary'\" href=\"/signup\">Sign up</a></li>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<li><a :class=\"currentPath === '/login' ? 'outline' : 'secondary'\" href=\"/login\">Log in</a></li><li><a :class=\"currentPath === '/signup' ? 'outline' : 'secondary'\" href=\"/signup\">Sign up</a></li>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</ul></nav>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</ul></nav>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

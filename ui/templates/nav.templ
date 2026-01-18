@@ -1,7 +1,7 @@
 package templates
 
-templ Nav(isAuthenticated bool) {
-	<nav x-data="{ currentPath: window.location.pathname }" x-init="currentPath = window.location.pathname">
+templ Nav(isAuthenticated bool, isAdmin bool) {
+	<nav x-data="{ currentPath: window.location.pathname }">
 		<ul>
 			<li><strong>Funky & Goofy Blog</strong></li>
 		</ul>
@@ -19,6 +19,11 @@ templ Nav(isAuthenticated bool) {
 				<li>
 					<a :class="currentPath === '/profile' ? 'outline' : 'secondary'" href="/profile">My profile</a>
 				</li>
+				if isAdmin {
+					<li>
+						<a :class="currentPath === '/admin/users' ? 'outline' : 'secondary'" href="/admin/users">Manage Users</a>
+					</li>
+				}
 				<li>
 					<a :class="currentPath === '/logout' ? 'outline' : 'secondary'" href="/logout" hx-post="/logout">Log out</a>
 				</li>

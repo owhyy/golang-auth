@@ -26,6 +26,12 @@ func Migrate(dataSourceName string) (*DB, error) {
 		return nil, err
 	}
 
+	// Enable foreign keys for CASCADE deletes to work
+	_, err = db.Exec("PRAGMA foreign_keys = ON")
+	if err != nil {
+		return nil, err
+	}
+
 	createTablesSQL := `
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,7 +195,6 @@ func Populate(db *DB, userCount int, postCount int) error {
 	return tx.Commit()
 }
 
-
 func CreateAdmin(db *DB, username, email, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -204,6 +209,6 @@ func CreateAdmin(db *DB, username, email, password string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
