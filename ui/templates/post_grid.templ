@@ -16,10 +16,40 @@ templ PostGrid(posts []models.Post, metadataType PostMetadataType) {
 <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 2rem;">
     for _, post := range posts {
     <article>
-        <h2 style="margin-top: 0;">
+        <h2 style="margin-top: 0; display: flex; align-items: center; justify-content: space-between; gap: .5rem;">
             <a href={ fmt.Sprintf("/posts/view/%s", post.Slug) }>
                 { post.Title }
             </a>
+            <span
+                x-data="{ hover: false }"
+                @mouseenter="hover = true"
+                @mouseleave="hover = false"
+                style="display: inline-flex; align-items: center; gap: .25rem; color: var(--pico-muted-color); cursor: default; user-select: none;"
+                :style="hover ? 'color: var(--pico-primary); transition: transform 120ms ease, color 120ms ease;' : 'transition: transform 120ms ease, color 120ms ease;'"
+                aria-label="Favorites"
+                title="Favorites"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    :fill="hover ? 'currentColor' : 'none'"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                if post.FavoriteCount > 0 {
+                <small style="color: currentColor; font-weight: 600;">
+                    { post.FavoriteCount }
+                </small>
+                }
+            </span>
         </h2>
         if post.Excerpt != "" {
         <p>{ post.Excerpt }</p>

@@ -28,6 +28,8 @@ type Post struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	FeaturedImage  *string
+	FavoriteCount  int
+	IsFavorited    bool
 }
 
 type PostModel struct {
@@ -47,7 +49,8 @@ func (m *PostModel) GetPublished(perPage, currentPage int) ([]Post, error) {
 			published_at,
 			created_at,
 			updated_at,
-			featured_image
+			featured_image,
+			(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id) AS favorite_count
 		FROM posts
 		WHERE status = 'published'
 		ORDER BY published_at DESC
@@ -78,6 +81,7 @@ func (m *PostModel) GetPublished(perPage, currentPage int) ([]Post, error) {
 			&p.CreatedAt,
 			&p.UpdatedAt,
 			&p.FeaturedImage,
+			&p.FavoriteCount,
 		)
 		if err != nil {
 			return nil, err
