@@ -11,9 +11,22 @@ COPY . .
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
     go build -a -installsuffix cgo \
     -ldflags "-s -w -extldflags '-static'" \
-    -o simple-auth ./cmd/web
+    -o blog ./cmd/web
+
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
+    go build -a -installsuffix cgo \
+    -ldflags "-s -w -extldflags '-static'" \
+    -o populate ./cmd/debug/populate.go
+
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
+    go build -a -installsuffix cgo \
+    -ldflags "-s -w -extldflags '-static'" \
+    -o createadmin ./cmd/debug/createadmin.go
 
 FROM scratch
-COPY --from=builder /app/simple-auth /simple-auth
+COPY --from=builder /app/blog /blog
+COPY --from=builder /app/populate /populate
+COPY --from=builder /app/createadmin /createadmin
+
 EXPOSE 8080
-ENTRYPOINT ["/simple-auth"]
+ENTRYPOINT ["/blog"]
