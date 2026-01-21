@@ -581,6 +581,7 @@ func (app *application) updatePost(w http.ResponseWriter, r *http.Request) {
 
 	title := r.PostForm.Get("title")
 	content := r.PostForm.Get("content")
+	excerpt := r.PostForm.Get("excerpt")
 
 	if title == "" {
 		title = post.Title
@@ -588,8 +589,15 @@ func (app *application) updatePost(w http.ResponseWriter, r *http.Request) {
 	if content == "" {
 		content = post.Content
 	}
+	if excerpt == "" {
+		if content != "" {
+			excerpt = generateExcerpt(content)
+		} else {
+			excerpt = post.Excerpt
+		}
+	}
 
-	err = app.posts.Update(uint(postID), title, content, post.FeaturedImage)
+	err = app.posts.Update(uint(postID), title, content, excerpt, post.FeaturedImage)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
@@ -654,7 +662,7 @@ func (app *application) updatePostImage(w http.ResponseWriter, r *http.Request) 
 		imageToUse = post.FeaturedImage
 	}
 
-	err = app.posts.Update(uint(postID), post.Title, post.Content, imageToUse)
+	err = app.posts.Update(uint(postID), post.Title, post.Content, post.Excerpt, imageToUse)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
@@ -698,7 +706,7 @@ func (app *application) deletePostImage(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = app.posts.Update(uint(postID), post.Title, post.Content, nil)
+	err = app.posts.Update(uint(postID), post.Title, post.Content, post.Excerpt, nil)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
@@ -791,10 +799,7 @@ func (app *application) postCreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if excerpt == "" {
-		excerpt = content
-		if len(excerpt) > 150 {
-			excerpt = excerpt[:150]
-		}
+		excerpt = generateExcerpt(content)
 	}
 
 	featuredImagePath, err := app.saveUploadedFile(r, "featured_image")

@@ -150,3 +150,10 @@ func (app *application) saveUploadedFile(r *http.Request, formField string) (*st
 	relativePath := "/uploads/" + filename
 	return &relativePath, nil
 }
+
+func generateExcerpt(content string) string {
+	if len(content) > 150 {
+		return content[:150]
+	}
+	return content
+}
