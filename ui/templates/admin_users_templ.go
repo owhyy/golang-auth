@@ -35,7 +35,7 @@ func AdminUsers(users []models.User, pagination types.PaginationData, currentUse
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section><hgroup style=\"text-align: center; margin-bottom: 2rem; align-items: flex-center;\"><h1>Manage Users</h1><p>Delete users</p></hgroup> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section id=\"main\"><hgroup style=\"text-align: center; margin-bottom: 2rem; align-items: flex-center;\"><h1>Manage Users</h1><p>Delete users</p></hgroup> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -146,7 +146,7 @@ func AdminUsers(users []models.User, pagination types.PaginationData, currentUse
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" hx-confirm=\"Are you sure you want to delete this user? This action cannot be undone, and will also delete all of the user's posts.\">Delete</button>")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" hx-confirm=\"Are you sure you want to delete this user? This action cannot be undone, and will also delete all of the user's posts.\" hx-swap=\"innerHTML\" hx-target=\"#main\">Delete</button>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

@@ -763,17 +763,17 @@ func (app *application) postCreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !author.EmailVerified && !author.IsAdmin {
+	if !author.EmailVerified {
 		app.clientError(w, http.StatusForbidden)
 		return
 	}
 
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(10 << 20)
+
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-
 	title := r.PostForm.Get("title")
 	excerpt := r.PostForm.Get("excerpt")
 	content := r.PostForm.Get("content")
@@ -987,8 +987,31 @@ func (app *application) deleteUser(w http.ResponseWriter, r *http.Request) {
 
 	app.infoLog.Printf("User %d deleted", userID)
 
+	pagination, err := app.newPagination(r)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	total, err := app.users.Count()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	if total < pagination.PerPage {
+		total = pagination.PerPage
+	}
+	pagination.TotalPages = total / pagination.PerPage
+
+	users, err := app.users.GetAll(pagination.PerPage, pagination.CurrentPage)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(""))
+	templates.AdminUsers(users, *pagination, app.getAuthenticatedUser(r).ID).Render(r.Context(), w)
+
 }
 
 func (app *application) serveUpload(w http.ResponseWriter, r *http.Request) {
