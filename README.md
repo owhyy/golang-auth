@@ -27,10 +27,10 @@ Accessing localhost:8080 should open the home page.
 
 There are some scripts in the cmd/debug folder that could prove useful:
 
-- Generating some fake data can be done by using the `populate` command. By default it will generate 1000 posts and 10 users, but this can be configured by passing specific flags.
+- Generating some fake data can be done by using the `populate` command. By default it will generate 1000 posts and 10 users, but this can be configured by passing specific flags. To simplify testing, it will also generate an admin account with credentials admin@example.com and password admin.
 
 ```
-go run ./cmd/debug/populate
+go run ./cmd/debug/populate.go
 ```
 
 - Creating a admin account is done via the `createadmin` command. The credentials are passed via command line arguments, like this:

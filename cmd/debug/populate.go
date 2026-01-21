@@ -25,8 +25,14 @@ func main() {
 
 	log.Println("🌱 Populating database...")
 	if err := models.Populate(db, *userCount, *postCount); err != nil {
-		log.Fatal(err)
+		log.Fatal("Populating database failed with error: ", err)
 	}
+	log.Println("✅  Database populated successfully! Added ", *userCount, " users and ", *postCount, " posts")
 
+	log.Println("🌱 Creating admin account")
+	if err := models.CreateAdmin(db, "admin", "admin@example.com", "admin"); err != nil {
+		log.Fatal("Creating admin account failed with error: ", err)
+	}
+	log.Println("✅ Admin account created successfully!")
 	log.Println("✅ Done")
 }
