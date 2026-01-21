@@ -57,7 +57,7 @@ templ PostView(post models.Post, isAuthenticated bool, authenticatedUser *models
 		</figure>
 		} else {
 		<div x-show="!editingImage" @click="editingImage = true"
-			style="cursor: pointer; padding: 2rem; border: 2px dashed var(--pico-muted-border-color); text-align: center; max-width: 80%; height: 500px; margin: 0 auto; position: relative;"
+			style="cursor: pointer; padding: 1rem; border: 2px dashed var(--pico-muted-border-color); text-align: center; max-width: 80%; height: 200px; margin: 0 auto; position: relative;"
 			title="Click to add image">
 			<small style="color: var(--pico-muted-color); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Click to add featured image</small>
 		</div>
@@ -82,6 +82,7 @@ templ PostView(post models.Post, isAuthenticated bool, authenticatedUser *models
 			style="max-width: 100%; height: auto; max-height: 600px; object-fit: contain;" />
 	</figure>
 	}
+	<div style="margin-top: 2rem;">
 	if isAuthenticated && (authenticatedUser.ID == post.AuthorID || authenticatedUser.IsAdmin) {
 	<div x-data="{ editingContent: false }">
 		<div x-ref="contentSource" style="display: none;">{ post.Content }</div>
@@ -98,15 +99,18 @@ templ PostView(post models.Post, isAuthenticated bool, authenticatedUser *models
 		</form>
 	</div>
 	} else {
-	<article style="white-space: pre-wrap;">
-		{ post.Content }
-	</article>
+	<form>
+		<article style="white-space: pre-wrap;">
+			{ post.Content }
+		</article>
+	</form>
 	}
 	<p>
 		<small>
 			Last edited on { post.UpdatedAt.Format("Jan 2, 2006 15:04") }
 		</small>
 	</p>
+	</div>
 	<footer style="margin-top: 3rem; text-align: center;">
 		if isAuthenticated && (authenticatedUser.ID == post.AuthorID || authenticatedUser.IsAdmin) {
 		if post.Status == models.Draft {
