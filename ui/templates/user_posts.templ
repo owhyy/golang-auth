@@ -5,13 +5,13 @@ import (
 	"owhyy/simple-auth/internal/types"
 )
 
-templ UserPosts(posts []models.Post, pagination types.PaginationData, username string) {
+templ UserPosts(posts []models.Post, pagination types.PaginationData, username string, isAuthenticated bool) {
 	<section>
 		<hgroup style="text-align: center; margin-bottom: 2rem; align-items: flex-center;">
 			<h1>Posts by <em>{ username }</em></h1>
 		</hgroup>
 		if len(posts) > 0 {
-			@PostGrid(posts, PostMetadataPublished)
+			@PostGrid(posts, PostMetadataPublished, isAuthenticated)
 			@Paginator(pagination, "")
 		} else {
 			<article style="text-align: center; padding: 2rem;">

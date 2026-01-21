@@ -3,12 +3,13 @@ package templates
 import "owhyy/simple-auth/internal/models"
 import "fmt"
 
-templ FavoriteButton(post models.Post, isFavorited bool) {
+templ FavoriteButton(post models.Post, isAuthenticated bool) {
 	<button
 		hx-post={ fmt.Sprintf("/posts/%d/favorite", post.ID) }
 		hx-swap="outerHTML"
-		style="background: none; border: none; padding: 0; display: inline-flex; align-items: center; gap: .25rem; color: var(--pico-muted-color); cursor: pointer;"
+		style="background: none; border: none; padding: 0; display: inline-flex; align-items: center; gap: .25rem; color: var(--pico-color-red-600);"
 		aria-label="Toggle Favorite"
+		disabled?={!isAuthenticated}
 	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -21,8 +22,8 @@ templ FavoriteButton(post models.Post, isFavorited bool) {
 			stroke-linejoin="round"
 			aria-hidden="true"
 		>
-			if isFavorited {
-				<path fill="currentColor" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+			if post.IsFavorited {
+				<path fill="var(--pico-color-red-600)" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
 			} else {
 				<path fill="none" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
 			}

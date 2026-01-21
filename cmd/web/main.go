@@ -19,6 +19,7 @@ type application struct {
 	users        *models.UserModel
 	tokens       *models.TokenModel
 	posts        *models.PostModel
+	favorites    *models.FavoriteModel
 	cookieStore  *sessions.CookieStore
 	emailService *services.EmailService
 }
@@ -53,6 +54,7 @@ func main() {
 		users:       &models.UserModel{DB: db},
 		tokens:      &models.TokenModel{DB: db},
 		posts:       &models.PostModel{DB: db},
+		favorites:   &models.FavoriteModel{DB: db},
 		cookieStore: store,
 		emailService: &services.EmailService{
 			Host:     config.SMTPHost,
@@ -89,6 +91,7 @@ func main() {
 	mux.HandleFunc("PATCH /posts/{id}/update-image", app.requireAuthentication(app.updatePostImage))
 	mux.HandleFunc("DELETE /posts/{id}/delete-image", app.requireAuthentication(app.deletePostImage))
 	mux.HandleFunc("DELETE /posts/{id}/delete", app.requireAuthentication(app.deletePost))
+	mux.HandleFunc("POST /posts/{id}/favorite", app.requireAuthentication(app.toggleFavorite))
 	mux.HandleFunc("GET /posts/my", app.requireAuthentication(app.myPosts))
 	mux.HandleFunc("GET /posts/create", app.requireAuthentication(app.postCreateGet))
 	mux.HandleFunc("POST /posts/create", app.requireAuthentication(app.postCreatePost))

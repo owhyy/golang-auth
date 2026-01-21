@@ -29,6 +29,12 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user := app.getAuthenticatedUser(r)
+	var userId *uint
+	if user != nil {
+		userId = &user.ID
+	}
+
 	searchQuery := strings.TrimSpace(r.URL.Query().Get("search"))
 	var posts []models.Post
 	var total int
@@ -39,7 +45,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, r, err)
 			return
 		}
-		posts, err = app.posts.SearchByTitle(searchQuery, pagination.PerPage, pagination.CurrentPage)
+		posts, err = app.posts.SearchByTitle(userId, searchQuery, pagination.PerPage, pagination.CurrentPage)
 		if err != nil {
 			app.serverError(w, r, err)
 			return
@@ -50,7 +56,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, r, err)
 			return
 		}
-		posts, err = app.posts.GetPublished(pagination.PerPage, pagination.CurrentPage)
+		posts, err = app.posts.GetPublished(userId, pagination.PerPage, pagination.CurrentPage)
 		if err != nil {
 			app.serverError(w, r, err)
 			return
@@ -62,7 +68,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	}
 	pagination.TotalPages = total / pagination.PerPage
 
-	app.render(w, r, http.StatusOK, "Home", templates.Home(posts, *pagination, searchQuery))
+	app.render(w, r, http.StatusOK, "Home", templates.Home(posts, *pagination, searchQuery, app.isAuthenticated(r)))
 }
 
 func (app *application) profile(w http.ResponseWriter, r *http.Request) {
@@ -908,6 +914,12 @@ func (app *application) userPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var currentUserID *uint
+	currentUser := app.getAuthenticatedUser(r)
+	if currentUser != nil {
+		currentUserID = &currentUser.ID
+	}
+
 	pagination, err := app.newPagination(r)
 	if err != nil {
 		app.serverError(w, r, err)
@@ -924,13 +936,13 @@ func (app *application) userPosts(w http.ResponseWriter, r *http.Request) {
 	}
 	pagination.TotalPages = total / pagination.PerPage
 
-	posts, err := app.posts.GetPublishedByAuthorID(user.ID, pagination.PerPage, pagination.CurrentPage)
+	posts, err := app.posts.GetPublishedByAuthorID(currentUserID, user.ID, pagination.PerPage, pagination.CurrentPage)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
 
-	app.render(w, r, http.StatusOK, fmt.Sprintf("Posts by %s", username), templates.UserPosts(posts, *pagination, username))
+	app.render(w, r, http.StatusOK, fmt.Sprintf("Posts by %s", username), templates.UserPosts(posts, *pagination, username, app.isAuthenticated(r)))
 }
 
 func (app *application) deleteUser(w http.ResponseWriter, r *http.Request) {
@@ -1063,4 +1075,63 @@ func (app *application) serveUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.ServeFile(w, r, filePath)
+}
+
+func (app *application) toggleFavorite(w http.ResponseWriter, r *http.Request) {
+	user := app.getAuthenticatedUser(r)
+	if user == nil {
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	postID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	isFavorited, err := app.favorites.IsFavorited(user.ID, uint(postID))
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	if isFavorited {
+		err = app.favorites.Remove(user.ID, uint(postID))
+	} else {
+		err = app.favorites.Add(user.ID, uint(postID))
+	}
+
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	post, err := app.posts.GetByID(uint(postID))
+	if err != nil {
+		if errors.Is(err, models.ErrRecordNotFound) {
+			app.clientError(w, http.StatusNotFound)
+			return
+		}
+		app.serverError(w, r, err)
+		return
+	}
+
+	post.IsFavorited, err = app.favorites.IsFavorited(user.ID, uint(postID))
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	post.FavoriteCount, err = app.favorites.GetFavoriteCount(uint(postID))
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	err = templates.FavoriteButton(*post, true).Render(r.Context(), w)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
 }

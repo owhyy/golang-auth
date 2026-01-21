@@ -5,24 +5,24 @@ import (
 	"owhyy/simple-auth/internal/types"
 )
 
-templ Home(posts []models.Post, pagination types.PaginationData, searchQuery string) {
-<section>
-	<hgroup style="text-align: center; margin-bottom: 2rem; align-items: flex-center;">
-		<h1>Check these posts out</h1>
-	</hgroup>
-	@SearchForm(searchQuery, "/")
-	if len(posts) > 0 {
-		@PostGrid(posts, PostMetadataPublished)
-		@Paginator(pagination, searchQuery)
-	} else {
-	<article style="text-align: center; padding: 2rem;">
-		if searchQuery != "" {
-		<p>No posts found matching <strong>"{ searchQuery }"</strong>.</p>
-		<p><a href="/">View all posts</a></p>
+templ Home(posts []models.Post, pagination types.PaginationData, searchQuery string, isAuthenticated bool) {
+	<section>
+		<hgroup style="text-align: center; margin-bottom: 2rem; align-items: flex-center;">
+			<h1>Check these posts out</h1>
+		</hgroup>
+		@SearchForm(searchQuery, "/")
+		if len(posts) > 0 {
+			@PostGrid(posts, PostMetadataPublished, isAuthenticated)
+			@Paginator(pagination, searchQuery)
 		} else {
-		<p>No posts yet.</p>
+			<article style="text-align: center; padding: 2rem;">
+				if searchQuery != "" {
+					<p>No posts found matching <strong>"{ searchQuery }"</strong>.</p>
+					<p><a href="/">View all posts</a></p>
+				} else {
+					<p>No posts yet.</p>
+				}
+			</article>
 		}
-	</article>
-	}
-</section>
+	</section>
 }

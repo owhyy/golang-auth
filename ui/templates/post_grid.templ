@@ -12,7 +12,7 @@ PostMetadataPublished PostMetadataType = "published"
 PostMetadataEdit PostMetadataType = "edit"
 )
 
-templ PostGrid(posts []models.Post, metadataType PostMetadataType) {
+templ PostGrid(posts []models.Post, metadataType PostMetadataType, isAuthenticated bool) {
 <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 2rem;">
     for _, post := range posts {
     <article>
@@ -20,7 +20,7 @@ templ PostGrid(posts []models.Post, metadataType PostMetadataType) {
             <a href={ fmt.Sprintf("/posts/view/%s", post.Slug) }>
                 { post.Title }
             </a>
-            @FavoriteButton(post, false)
+            @FavoriteButton(post, isAuthenticated)
         </h2>
         if post.Excerpt != "" {
         <p>{ post.Excerpt }</p>

@@ -39,7 +39,7 @@ func MyPosts(posts []models.Post, pagination types.PaginationData) templ.Compone
 			return templ_7745c5c3_Err
 		}
 		if len(posts) > 0 {
-			templ_7745c5c3_Err = PostGrid(posts, PostMetadataEdit).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = PostGrid(posts, PostMetadataEdit, true).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

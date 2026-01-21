@@ -36,29 +36,57 @@ type PostModel struct {
 	DB *DB
 }
 
-func (m *PostModel) GetPublished(perPage, currentPage int) ([]Post, error) {
-	query := `
-		SELECT
-			id,
-			title,
-			slug,
-			content,
-			excerpt,
-			author_id,
-			status,
-			published_at,
-			created_at,
-			updated_at,
-			featured_image,
-			(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id) AS favorite_count
-		FROM posts
-		WHERE status = 'published'
-		ORDER BY published_at DESC
-		LIMIT $1
-                OFFSET $2
-	`
+func (m *PostModel) GetPublished(userID *uint, perPage, currentPage int) ([]Post, error) {
+	var query string
+	var args []interface{}
 
-	rows, err := m.DB.Query(query, perPage, (currentPage-1)*perPage)
+	if userID != nil {
+		query = `
+			SELECT
+				id,
+				title,
+				slug,
+				content,
+				excerpt,
+				author_id,
+				status,
+				published_at,
+				created_at,
+				updated_at,
+				featured_image,
+				(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id) AS favorite_count,
+				(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id AND f.user_id = ?) AS is_favorited
+			FROM posts
+			WHERE status = 'published'
+			ORDER BY published_at DESC
+			LIMIT ? OFFSET ?
+		`
+		args = []interface{}{*userID, perPage, (currentPage - 1) * perPage}
+	} else {
+		query = `
+			SELECT
+				id,
+				title,
+				slug,
+				content,
+				excerpt,
+				author_id,
+				status,
+				published_at,
+				created_at,
+				updated_at,
+				featured_image,
+				(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id) AS favorite_count,
+				false AS is_favorited
+			FROM posts
+			WHERE status = 'published'
+			ORDER BY published_at DESC
+			LIMIT ? OFFSET ?
+		`
+		args = []interface{}{perPage, (currentPage - 1) * perPage}
+	}
+
+	rows, err := m.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +110,7 @@ func (m *PostModel) GetPublished(perPage, currentPage int) ([]Post, error) {
 			&p.UpdatedAt,
 			&p.FeaturedImage,
 			&p.FavoriteCount,
+			&p.IsFavorited,
 		)
 		if err != nil {
 			return nil, err
@@ -156,15 +185,17 @@ func (m *PostModel) GetByAuthorID(authorID uint, limit, currentPage int) ([]Post
 			published_at,
 			created_at,
 			updated_at,
-			featured_image
+			featured_image, 
+			(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id) AS favorite_count,
+			(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id AND f.user_id = $1) AS is_favorited
 		FROM posts
-		WHERE author_id = $1
+		WHERE author_id = $2
 		ORDER BY published_at DESC
-		LIMIT $2
-                OFFSET $3
+		LIMIT $3
+		OFFSET $4
 	`
 
-	rows, err := m.DB.Query(query, authorID, limit, (currentPage-1)*limit)
+	rows, err := m.DB.Query(query, authorID, authorID, limit, (currentPage-1)*limit)
 	if err != nil {
 		return nil, err
 	}
@@ -187,6 +218,8 @@ func (m *PostModel) GetByAuthorID(authorID uint, limit, currentPage int) ([]Post
 			&p.CreatedAt,
 			&p.UpdatedAt,
 			&p.FeaturedImage,
+			&p.FavoriteCount,
+			&p.IsFavorited,
 		)
 		if err != nil {
 			return nil, err
@@ -261,29 +294,57 @@ func (m *PostModel) CountPublished() (int, error) {
 	return int(count), nil
 }
 
-func (m *PostModel) SearchByTitle(searchQuery string, perPage, currentPage int) ([]Post, error) {
-	query := `
-		SELECT
-			id,
-			title,
-			slug,
-			content,
-			excerpt,
-			author_id,
-			status,
-			published_at,
-			created_at,
-			updated_at,
-			featured_image
-		FROM posts
-		WHERE status = 'published' AND LOWER(title) LIKE LOWER($1)
-		ORDER BY published_at DESC
-		LIMIT $2
-		OFFSET $3
-	`
+func (m *PostModel) SearchByTitle(userID *uint, searchQuery string, perPage, currentPage int) ([]Post, error) {
+	var query string
+	var args []interface{}
 
-	searchPattern := "%" + searchQuery + "%"
-	rows, err := m.DB.Query(query, searchPattern, perPage, (currentPage-1)*perPage)
+	if userID != nil {
+		query = `
+			SELECT
+				id,
+				title,
+				slug,
+				content,
+				excerpt,
+				author_id,
+				status,
+				published_at,
+				created_at,
+				updated_at,
+				featured_image,
+				(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id) AS favorite_count,
+				(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id AND f.user_id = ?) AS is_favorited
+			FROM posts
+			WHERE status = 'published' AND LOWER(title) LIKE LOWER(?)
+			ORDER BY published_at DESC
+			LIMIT ? OFFSET ?
+		`
+		args = []interface{}{*userID, "%" + searchQuery + "%", perPage, (currentPage - 1) * perPage}
+	} else {
+		query = `
+			SELECT
+				id,
+				title,
+				slug,
+				content,
+				excerpt,
+				author_id,
+				status,
+				published_at,
+				created_at,
+				updated_at,
+				featured_image,
+				(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id) AS favorite_count,
+				false AS is_favorited
+			FROM posts
+			WHERE status = 'published' AND LOWER(title) LIKE LOWER(?)
+			ORDER BY published_at DESC
+			LIMIT ? OFFSET ?
+		`
+		args = []interface{}{"%" + searchQuery + "%", perPage, (currentPage - 1) * perPage}
+	}
+
+	rows, err := m.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -306,6 +367,8 @@ func (m *PostModel) SearchByTitle(searchQuery string, perPage, currentPage int) 
 			&p.CreatedAt,
 			&p.UpdatedAt,
 			&p.FeaturedImage,
+			&p.FavoriteCount,
+			&p.IsFavorited,
 		)
 		if err != nil {
 			return nil, err
@@ -345,28 +408,57 @@ func (m *PostModel) CountForUser(author_id uint) (int, error) {
 	return int(count), nil
 }
 
-func (m *PostModel) GetPublishedByAuthorID(authorID uint, perPage, currentPage int) ([]Post, error) {
-	query := `
-		SELECT
-			id,
-			title,
-			slug,
-			content,
-			excerpt,
-			author_id,
-			status,
-			published_at,
-			created_at,
-			updated_at,
-			featured_image
-		FROM posts
-		WHERE author_id = $1 AND status = 'published'
-		ORDER BY published_at DESC
-		LIMIT $2
-		OFFSET $3
-	`
+func (m *PostModel) GetPublishedByAuthorID(currentUserID *uint, authorID uint, perPage, currentPage int) ([]Post, error) {
+	var query string
+	var args []interface{}
 
-	rows, err := m.DB.Query(query, authorID, perPage, (currentPage-1)*perPage)
+	if currentUserID != nil {
+		query = `
+			SELECT
+				id,
+				title,
+				slug,
+				content,
+				excerpt,
+				author_id,
+				status,
+				published_at,
+				created_at,
+				updated_at,
+				featured_image,
+				(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id) AS favorite_count,
+				(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id AND f.user_id = ?) AS is_favorited
+			FROM posts
+			WHERE author_id = ? AND status = 'published'
+			ORDER BY published_at DESC
+			LIMIT ? OFFSET ?
+		`
+		args = []interface{}{*currentUserID, authorID, perPage, (currentPage - 1) * perPage}
+	} else {
+		query = `
+			SELECT
+				id,
+				title,
+				slug,
+				content,
+				excerpt,
+				author_id,
+				status,
+				published_at,
+				created_at,
+				updated_at,
+				featured_image,
+				(SELECT COUNT(1) FROM favorites f WHERE f.post_id = posts.id) AS favorite_count,
+				false AS is_favorited
+			FROM posts
+			WHERE author_id = ? AND status = 'published'
+			ORDER BY published_at DESC
+			LIMIT ? OFFSET ?
+		`
+		args = []interface{}{authorID, perPage, (currentPage - 1) * perPage}
+	}
+
+	rows, err := m.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -389,6 +481,8 @@ func (m *PostModel) GetPublishedByAuthorID(authorID uint, perPage, currentPage i
 			&p.CreatedAt,
 			&p.UpdatedAt,
 			&p.FeaturedImage,
+			&p.FavoriteCount,
+			&p.IsFavorited,
 		)
 		if err != nil {
 			return nil, err

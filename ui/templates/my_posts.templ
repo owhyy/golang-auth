@@ -11,7 +11,7 @@ templ MyPosts(posts []models.Post, pagination types.PaginationData) {
 			<h1>My posts</h1>
 		</hgroup>
 		if len(posts) > 0 {
-			@PostGrid(posts, PostMetadataEdit)
+			@PostGrid(posts, PostMetadataEdit, true)
 			@Paginator(pagination, "")
 		} else {
 			<p style="text-align: center;">No posts yet. Go ahead and write something!</p>
