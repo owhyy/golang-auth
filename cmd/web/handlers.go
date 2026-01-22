@@ -22,6 +22,10 @@ import (
 
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_]{3,20}$`)
 
+// used to force user to set strong password
+// greater entropy is stronger
+const minEntropyBits = 50
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	pagination, err := app.newPagination(r)
 	if err != nil {
@@ -179,7 +183,6 @@ func (app *application) signupPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	const minEntropyBits = 50
 	err = passwordvalidator.Validate(password, minEntropyBits)
 	if err != nil {
 		fmt.Fprintf(w, `
@@ -350,12 +353,18 @@ func (app *application) resetPasswordPost(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Only case where we have to show error to the UI
+	// Only cases where we have to show error to the UI
 	// because it can happen because of the user.
 	// All other errors should not normally happen
 	// so it's safe to return them as API errors
 	if password != passwordConfirm {
 		app.renderHTMXError(w, "Passwords do not match")
+		return
+	}
+
+	err = passwordvalidator.Validate(password, minEntropyBits)
+	if err != nil {
+		app.renderHTMXError(w, "Error: "+err.Error())
 		return
 	}
 

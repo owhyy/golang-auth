@@ -70,11 +70,11 @@ func (s *EmailService) SendResetPasswordEmail(to, baseURL, token string) error {
 	body := fmt.Sprintf(`
 		<html>
 		<body>
-			<h2>Welcome!</h2>
-			<p>Please verify your email address by clicking the link below:</p>
+			<h2>Password reset</h2>
+			<p>You can reset your password by clicking the link below:</p>
 			<p><a href="%s">Verify Email</a></p>
-			<p>This link will expire in 30 minutes.</p>
-			<p>If you didn't sign up, please ignore this email.</p>
+			<p>This link will expire in 10 minutes.</p>
+			<p>If you didn't request a password reset, please ignore this email.</p>
 		</body>
 		</html>
 	`, verifyURL)
